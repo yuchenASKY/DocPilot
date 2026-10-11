@@ -1,0 +1,18 @@
+# 密钥与虚拟环境（绝对不能提交）
+.env
+.venv/
+venv/
+
+# 数据与索引（体积大、可重建）
+.data/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# 编辑器
+.idea/
+.vscode/
+.DS_Store
