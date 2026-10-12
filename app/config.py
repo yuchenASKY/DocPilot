@@ -1,0 +1,64 @@
+from functools import lru_cache
+from pathlib import Path
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# 项目根目录（app/ 的上一级）
+ROOT_DIR = Path(__file__).resolve().parent.parent
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=str(ROOT_DIR / ".env"),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    # --- LLM ---
+    openai_api_key: str = ""
+    openai_base_url: str = "https://api.deepseek.com/v1"
+    llm_model: str = "deepseek-chat"
+    llm_temperature: float = 0.2
+    llm_max_tokens: int = 1024
+
+    # --- Embedding（第 6 步用）---
+    embed_model: str = ""          # 留空 -> 使用内置离线伪向量
+    embed_dim: int = 512
+
+    # --- 检索（第 5 / 8 步用）---
+    top_k: int = 5
+    chunk_size: int = 500
+    chunk_overlap: int = 80
+    hybrid_alpha: float = 0.5      # 混合检索权重（0~1，越大越偏向向量）
+    rrf_k: int = 60                # RRF 融合常数，论文推荐 60
+
+    # --- 存储 ---
+    vector_dir: Path = ROOT_DIR / ".data" / "vectorstore"
+    upload_dir: Path = ROOT_DIR / ".data" / "uploads"
+    docs_dir: Path = ROOT_DIR / "data" / "docs"
+
+    # --- 可选 Redis（第 13 步用）---
+    redis_url: str = "redis://127.0.0.1:6379/0"
+    use_redis: bool = False
+
+    @property
+    def llm_enabled(self) -> bool:
+        """有没有配真实 LLM Key。没配就走离线降级，保证链路能跑通。"""
+        return bool(self.openai_api_key.strip())
+
+    @property
+    def embed_enabled(self) -> bool:
+        """有没有配真实 embedding 服务（第 6 步用）。"""
+        return bool(self.embed_model.strip()) and self.llm_enabled
+
+
+@lru_cache
+def get_settings() -> Settings:
+    s = Settings()
+    # 首次启动时把数据目录建出来，省得后面写文件时报「目录不存在」
+    s.vector_dir.mkdir(parents=True, exist_ok=True)
+    s.upload_dir.mkdir(parents=True, exist_ok=True)
+    return s
+
+
+settings = get_settings()
