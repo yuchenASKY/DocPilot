@@ -1,0 +1,3415 @@
+Title: Error-Corrected Memory and Logic on a Heavy-Hex Superconducting-Qubit Processor
+Authors: Campbell K. McLauchlan, Georgia M. Nixon, Julien M. Drouet, Xanda C. Kolesnikow 等 10 人
+Published: 2026-10-08
+arXiv: 2610.11658v1
+Subject: quant-ph
+Source: https://arxiv.org/abs/2610.11658v1
+Pages: 28
+========================================================================
+
+Error-Corrected Memory and Logic on a Heavy-Hex Superconducting-Qubit
+Processor
+Campbell K. McLauchlan, 1 Georgia M. Nixon, 1 Julien M. Drouet, 1, 2 Xanda C. Kolesnikow, 1 Seok-Hyung Lee, 3
+James Raftery, 4 Karthik Siva,4 Stephen D. Bartlett, 1,∗ Benjamin J. Brown, 4, 5 and Robin Harper 1
+1School of Physics, The University of Sydney, Sydney, New South Wales 2006, Australia
+2School of Computer and Communication Science,
+Ecole Polytechnique F´ ed´ erale de Lausanne, Lausanne 1015, Switzerland
+3Department of Quantum Information Engineering,
+Sungkyunkwan University, Suwon 16419, Republic of Korea
+4IBM Quantum, T. J. Watson Research Center, Yorktown Heights, New York 10598, USA
+5IBM Denmark, Sundkrogsgade 11, 2100 Copenhagen, Denmark
+Large quantum computations require high-fidelity error-corrected memory and fault-tolerant log-
+ical operations. To achieve these with superconducting circuits, quantum processors will need many
+components operating with low error rates. In practice, fabrication of monolithic superconducting
+devices produces unavoidable heterogeneity in component performance, which the quantum com-
+puter must accommodate. We implement strategies to operate a large dynamic compass code on
+an array of 156 superconducting qubits arranged on a heavy-hexagonal lattice, making use of the
+entire monolithic quantum processor and redesigning our measurement schedule to exclude under-
+performing components. We demonstrate improvements of up to 35% in logical error probabilities
+for a memory experiment by using a noise-informed decoder combined with strategies to exclude
+the worst-performing qubits and couplers, along with post-selecting on shots with a low probability
+of leakage errors. In addition to these memory results, we also observe performance gains of up
+to 56% when these strategies are applied to measurement-based logic, demonstrated by stability
+experiments. We furthermore demonstrate high-fidelity fault-tolerant logic through lattice surgery.
+Throughpre-selection filtering techniques, we can obtain Bell fidelities above 77%, and further
+logical gap post-selection using exclusive decoding increases these fidelities to above 97%. Our ex-
+periments demonstrate that high performance can be maintained in key elements of fault-tolerant
+quantum memory and logic when working on monolithic superconducting quantum processors with
+underperforming components, by using a suite of noise-informed quantum error correction strategies.
+I. INTRODUCTION
+Superconducting platforms offer scalable routes to-
+wards fault-tolerant quantum computing. They ad-
+mit short error-correcting cycle times resulting from
+fast operations [1], high-yield device fabrication and
+advanced characterization techniques [2–4], long coher-
+ence times [5–7], high-fidelity two-qubit gates [7, 8],
+and leakage mitigation strategies [9–13]. Key primi-
+tives for fault-tolerant quantum computing have been
+demonstrated [1, 14–24], and theoretical work has out-
+lined pathways to achieving utility with superconducting
+quantum devices [25–27].
+To operate quantum computers at scale, we must per-
+form high-fidelity error-correction and fault-tolerant logic
+across large sections of devices. Superconducting plat-
+forms pose several challenges in this regard. First, one
+must design a code and architecture that can be operated
+in a scalable fashion given a fixed connectivity. Second,
+we must accurately decode errors, requiring us to obtain
+good noise-characterization data and measurement infor-
+mation in a timely and efficient manner. Third, any ap-
+proach must allow for some number of defective or under-
+performing components. Without this, superconducting
+∗ stephen.bartlett@sydney.edu.au
+devices may face prohibitively low manufacturing yields,
+or the codes’ performance will suffer when operating on
+large-scale chips [18]. Finally, scaling up to larger codes
+introduces more points at which qubits may leak out of
+the computational subspace, which can dramatically de-
+teriorate performance [28].
+In this work we demonstrate the operation of key el-
+ements of error-correction and logic across the entirety
+of a 156-qubit superconducting quantum computing de-
+vice with a heavy-hex connectivity,ibm boston, finding
+substantial performance gains by using noise-informed
+approaches. We benchmark our error-correction perfor-
+mance through quantum memory experiments, in which
+logical qubits in a variety of stabilizer states are prepared,
+and then measured after several rounds of syndrome ex-
+traction. Memory experiments help determine the ability
+of our error-correcting scheme to protect quantum infor-
+mation while it is idling in a processor. We then bench-
+mark fault-tolerant logic performance through stability
+experiments [19, 29, 30], which characterize the ability
+to perform logical measurements and manipulate codes,
+critical for operations such as lattice surgery [31–34] and
+logical Clifford gates [33, 35, 36]. Finally, we perform lat-
+tice surgery experiments directly [16, 20, 22, 31–33, 37–
+44] to measure the performance of fault-tolerant logic
+in the device. These are sensitive to logical errors in
+both memory and stability. These logical characteriza-
+arXiv:2610.11658v1 [quant-ph] 8 Oct 2026
+
+2
+tion experiments help determine the capability of the ap-
+proaches and devices for fault-tolerant quantum comput-
+ing.
+Our code of choice is the dynamic compass code [30,
+45]. It is designed for the heavy-hex qubit array [46] and
+has a relatively low footprint for a given code distance,
+in comparison to other codes one might consider on this
+qubit geometry [11, 47–53]. The dynamic compass code
+also demonstrates a threshold in both memory and sta-
+bility [30], meaning theoretically that it can be scaled to
+improve performance in memory and logic.
+We demonstrate the benefits of noise-informed decod-
+ing in memory experiments operated over the entire de-
+vice, as well as the utility of this approach in decoding
+stability and lattice surgery experiments. We use aver-
+aged circuit eigenvalue sampling (ACES) [54–56] to ex-
+tract circuit-specific Pauli noise models that inform de-
+coding. We can obtain more information by extracting
+data from measurement pulses beyond the binary out-
+comes, and using this data for soft decoding [57–59]. We
+show that soft information and ACES noise data interact
+in stability performance in ways not previously observed.
+In particular, soft information improves the decoding of
+stability experiments only when ACES information is not
+used, bringing performance with a decoder informed by
+a simpler noise model on par with ACES-informed de-
+coding.
+As larger superconducting chips are manufactured, a
+degree of heterogeneity in the performance of components
+such as couplers and qubits, and even completely defec-
+tive components, will need to be tolerated in order to
+maintain acceptable yields from the manufacturing pro-
+cesses. The quantum processoribm boston, for example,
+typically displays very low median error rates, but has a
+small number of qubits or couplers suffering from noise
+1 – 2 orders of magnitude higher [60]. We therefore seek
+quantum error correction strategies that can maintain
+high performance despite this heterogeneity. There has
+been considerable recent effort towards designing defect-
+exclusion strategies for the surface code [61–73] followed
+by some demonstrations in experiment [18, 74]. However,
+comparatively little work has been devoted to similar
+strategies for codes on layouts with more general connec-
+tivities, and in particular, lattices that are less connected
+than a square grid, making defect avoidance more chal-
+lenging [70, 72, 75]. Here, we design and implement an
+approach for defect-mitigation in the dynamic compass
+code operated on the heavy-hex qubit array. Our strate-
+gies improve performance substantially in both memory
+and stability inibm boston, beyond what is achievable
+with noise-informed decoding alone.
+Measurement data also provides information about
+when leakage has occurred [18, 45, 76, 77]. We can obtain
+estimates for the role of leakage in limiting performance
+by post-selecting on runs in which it is likely that no
+qubits have leaked. For our lattice surgery results, we
+introduce a technique for leakagepre-selection [78], in
+which we do not execute runs when the starting state
+is likely to have already experienced some leakage. We
+also investigate the effect of pre- and post-selection more
+broadly. We find substantial improvements from remov-
+ing shots that prepared an initial code state with error,
+and also from using logical gap post-selection [79–82]. Fi-
+nally, we observe that post-selecting on the convergence
+of a belief propagation stage of the decoder [83] results
+in similar improvements in a different experiment.
+A. Summary of Results
+We here present a summary of our results, presented in
+detail in Section II. We introduce defect exclusion tech-
+niques for the dynamic compass code in Section II A.
+When combining ACES-informed BeliefMatching decod-
+ing, defect mitigation and leakage post-selection, in full-
+device memory experiments, we observe 4.11% and 2.56%
+logical error probabilities per round in theZandXbases,
+respectively. These are 32.3% and 35.2% improvements
+compared to baseline performance, in the two bases, re-
+spectively (Section II B). These results were qualitatively
+consistent across multiple days of data collection. Our
+best results, without any post-selection, found 4.4% and
+2.9% logical error per round in the two bases, respec-
+tively. On a different day in which the noisy components
+were performing worse, we observed improvements result-
+ing just from defect exclusion of up to 40%, depending
+on the decoder used. We observe that defect exclusion
+still produces sizeable gains even with good noise char-
+acterization. We find that our 7×7 memory patch with
+defect-mitigation meets or surpasses the average 5×5
+memory patch performance in both bases, indicating a
+key role for defect exclusion strategies in pushing mono-
+lithic devices into the sub-threshold regime.
+In stability, we observe continual error-suppression up
+to 30 rounds of syndrome extraction only when we ex-
+clude defects, whereas we find plateaus in patches with-
+out defect mitigation starting around 12 rounds. At 30
+rounds, we find an overall improvement of 56% in fail-
+ure probability from our techniques (Section II C). We
+observe that soft information improves performance only
+when using reported (not ACES) noise for decoding.
+When performing lattice surgery, we obtain lower
+bounds on Bell fidelities of 77.3% when just using pre-
+selection filters. When combining this with logical gap
+post-selection, we obtain a Bell fidelity above 97.6% with
+a post-selection yield of 27% (Section II D). In the Ap-
+pendices, we report further results for memory, stability
+and lattice surgery (including logical state teleportation)
+experiments.
+
+3
+(a) (b)
+FIG. 1.Dynamic compass code on the 156-qubit quantum processoribm boston.(a) Arrangement of qubits and
+couplers onibm boston, with the layout of the 7×7 dynamic compass code shown. Data qubits are shown in yellow,Zand
+Xmeasure qubits in red and blue respectively, and qubits used only for routing and flag information in gray. TheZ(X)
+checks of the code are shown with red (blue) plaquettes. TheZ(X) logical operator of the code is shown with a red (blue)
+string and rings. The code arises from a four-step sequence of check operator measurements. (b) Syndrome extraction schedule
+of the dynamic compass code with underperforming qubits 85 and 46 excluded. In each step, shaded checks indicate parity
+measurements made during that step, while unshaded colored regions indicate members of the instantaneous stabilizer group.
+II. RESULTS
+A. Dynamic Compass Code for a Heavy-Hex Qubit
+Array Excluding Defective Components
+We perform experiments using the IBM Quantum
+Heronclass of superconducting quantum processor,
+where 156 qubits are arranged on a plane with connectiv-
+ity described by a heavy-hex lattice, displayed in Fig. 1.
+We present results on the deviceibm boston, which sup-
+ports mid-circuit measurements and high fidelity (me-
+dian≃99.7%) two-qubit gates. The fidelity of processor
+components vary day-to-day, but underperforming com-
+ponents tend to cluster around one valence-2 qubit at site
+46, and one valence-3 qubit at site 85 (see Sec. IV B for
+discussion of defective qubits and couplers in the device).
+We run experiments with the dynamic compass
+code [30, 45], and test strategies to treat the defective
+components. This code is compatible with the heavy-
+hex qubit array and demonstrates a threshold in both
+logical bases [30]. The code is a dynamic, or Floquet,
+code withX-checks (Z-checks) consisting of four-body
+(two-body) measurements on data qubits. The code is
+designed from the gauge measurements of the heavy-hex
+code [19, 46] for use on the heavy-hex layout. We con-
+sider a 7×7 code for the memory experiment as shown
+in Fig. 1, and a 5×5 code for the stability experiment as
+shown in Fig. 5. The 7×7 memory patch is the largest
+n×npatch that fits on the device. Both patches are large
+enough that they cannot avoid operating across regions
+with defective components.
+Our sequence for the 7×7 code with defect exclu-
+sion is shown in Fig. 1(b). Importantly, the excluded
+qubits (black dots) and their neighboring couplers are
+never used. Instead, we redesign gauge measurements
+around the defective qubits to form superstabilizers that
+are not supported on the defective components. This re-
+sults in someXgauge checks being reduced to weight-2
+or 3, and someZ-gauge checks reduced to weight-1.
+Additionally, the dynamic nature of the code allows
+for all stabilizers to remain low weight. The dynamic
+compass code [30, 45] does not maintain a fixed stabilizer
+group; we measure a sequence of anti-commuting checks
+that changes the instantaneous stabilizer group over a
+finite period [49, 84]. The four-step periodic sequence of
+check measurements is shown in Fig. 1(b). In Steps 1
+and 3 we measure allX-checks in the code. In Step 2
+we measure a subset of theZ-checks and in Step 4 we
+
+4
+Z memory X memory
+0.00
+0.01
+0.02
+0.03
+0.04
+0.05
+0.06
+0.07
+Logical error per round
+0.0607
+0.0537
+0.0466
+0.0411 0.0395 0.0372
+0.0324
+0.0256
+5.3%
+abort
+per rd
+5.4%
+abort
+per rd
+Reported Noise
+ACES Noise
+ACES, q46 + q85 out
+ACES, q46 + q85 out, PS (cutoff 0.9)
+10−1
+100
+Memory survival (1 − 2pL)
+Z memory
+Reported Noise
+ACES Noise
+ACES, q46 + q85 out
+ACES, q46 + q85 out, PS (cutoff 0.9)
+0 5 10 15 20 25 30
+Syndrome extraction rounds
+10−1
+100
+Memory survival (1 − 2pL)
+X memory
+(a) (b)
+FIG. 2.Memory experiments for7×7dynamic compass code.Results of memory experiments performed in both
+PauliZandXbases, comparing the improvements from decoder, code and post-selection modifications. (a) Logical errors per
+round for four different noise-informed strategies, reported in detail in Table II. First, we inform a BeliefMatching decoder with
+generic, IBM-reported noise information (blue data). We use this information to construct a Pauli error model (see Section IV A)
+that sets the prior probabilities in the belief propagation step. We compare this to a decoder that is provided ACES noise
+information (red data). The improved logical error probabilities indicate ACES offers a more accurate characterization of the
+system during syndrome extraction. We then compare these results to a modified code in which we perform active defect
+exclusion on qubits 46 and 85, along with their surrounding couplers (orange data). Finally, we compare the above to the result
+of excluding defectsandremoving leakage from analyzed shots through post-selection (at a cutoff probability of 0.9; light green
+data). All data was generated on 2026/06/01. The logical error per round is obtained by fitting the measured logical error
+probabilityp L to an exponential function of the number of measurement roundsrafter the logical subspace is set up (from
+r= 1 to 30), as explained in the main text. (b) Memory survival probability as a function of number of syndrome extraction
+rounds, forXandZmemory experiments and all decoders, defect exclusion and post-selection conditions mentioned above.
+measure the remainder of theZ-checks. The partition of
+Z-checks into Steps 2 and 4 allows forXstabilizers in
+the instantaneous stabilizer group of each step to remain
+low weight. Away from defects, they have a maximum
+weight of 8 on data qubits, while near defects this may
+increase up to 10.
+The four-step sequence can be parallelized to only
+require two measurement layers [19]. SinceZandX
+check measurements occur on disjoint subsets of mea-
+sure qubits, we can measureXandZchecks simultane-
+ously. Therefore, we delay the measurement ofXmea-
+sure qubits in Step 1 (Step 3) until theZmeasure qubits
+are ready to be measured in Step 2 (Step 4). Aligning
+the measurement layers reduces the overall time taken
+for syndrome extraction as well as data qubit idling, since
+measurements consume the majority of wall-clock time of
+a syndrome extraction cycle. See Section IV C for further
+details on the syndrome measurement circuits around de-
+fects.
+B. Memory Experiments
+Using the 7×7 dynamic compass code defined in the
+previous section, we perform memory experiments to
+characterize its performance. In these experiments, we
+initialize the code in a logical stabilizer state (either|0⟩,
+|1⟩,|+⟩or|−⟩), perform a number of rounds of syn-
+drome extraction, counted by the number of layers of
+measurements in the circuit after initialization, and then
+measure the data qubits to determine the state of the
+logical qubit fault-tolerantly. We average over the two
+basis state preparations (|0⟩and|1⟩, or|+⟩and|−⟩) for
+each memory experiment (ZorX).
+Figure 2(a) compares the logical error per round us-
+ing the four noise informed decoding strategies presented
+
+5
+0
+10
+20
+30
+40
+Error reduction vs
+no defect removal (%)
+Z memory
+Defect(s) removed
+q46 out
+q85 out
+q46 + q85 out
+Simple noise
+PyMatching
+Reported Noise
+BeliefMatching
+ACES noise
+BeliefMatching
+0
+10
+20
+30
+40
+Error reduction vs
+no defect removal (%)
+X memory
+FIG. 3.Defect exclusion and decoding strategies.We
+compare excluding no defects, excluding qubit 85, excluding
+qubit 46, or excluding both (this patch is shown in Fig. 1).
+We also compare three different decoders: PyMatching with a
+simple uniform noise model, BeliefMatching with a reported
+noise model, and BeliefMatching with an ACES-informed
+noise model. Even with better noise information and more
+accurate decoders, the gains of defect exclusion remain pro-
+nounced. We plot the percentage reduction in logical error
+per round compared to no defect-mitigation for the three de-
+fect exclusion choices and three decoders. Data was collected
+on 2026/05/02.
+in Table II. In all cases, we use a BeliefMatching de-
+coder [83] informed by noise characterization data. In
+the first case (reported noise), we use a Pauli noise model
+based on the coupler and qubit error information pro-
+vided by IBM, specific to the day of the experiment (see
+Section IV A). In the second case (ACES noise), we gen-
+erate noise models based on ACES noise characterization
+experiments run contemporaneous with the correspond-
+ing memory experiments. In some cases, ACES noise
+information obtained from a different day or that was
+specific to a slightly different syndrome extraction cir-
+cuit needed to be used due to absence of more accurate
+data. The ACES noise model captures more of the de-
+vice inhomogeneity than the reported noise, incorporat-
+ing, for example, circuit-layer-specific differences in gate
+noise profiles resulting from other gates that are operated
+simultaneously. The more accurate noise model results
+in modest improvements over the reported noise data.
+Excluding underperforming components around qubits
+85 and 46 resulted in further improvements. This defect
+exclusion consistently resulted in a reduced logical error
+per round, on every day of data collection. The combina-
+tion of ACES information and defect exclusion improved
+the logical error per round by 23.2% and 18.0% for the
+ZandXbasis memory experiments, respectively, com-
+pared to reported noise decoding.
+We see continued improvements in logical error per
+round when recalibrating measurements using the IQ
+data and removing shots that may have experienced leak-
+age through post-selection. In theZbasis, we find an
+overall improvement in logical error of 32.3%, and in the
+Xbasis we find an improvement of 35.2%.
+The IQ plane data is obtained from measurements,
+which carry more than just binary classification infor-
+mation. To perform leakage post-selection, we first pre-
+pare and measure all qubits in states|0⟩,|1⟩and|2⟩,
+and fit the resulting IQ data spreads to weighted Gaus-
+sian mixture models (see Ref. 45). From these models we
+can use the IQ data from QEC experiments to determine
+the probability that each measurement detects a leakage
+event. We discard any shots from the analysis in which
+we find a probability of≥90% that the qubit has leaked.
+Furthermore, for the shots that are not discarded, we use
+the IQ data to produce probabilitiesp 0 andp 1 that the
+qubit is in state|0⟩or state|1⟩, respectively, and take the
+measurement outcome to be argmaxi (pi). The use of IQ
+data and post-selection results in a further reduction in
+logical error per round of 11.8% and 21.0% inZandX
+bases, respectively (see Fig. 2). For all data, we use a
+BeliefMatching decoder [83].
+We note that to calculate logical error per round in
+Fig. 2(a), we fit the logical error rate data, averaged
+over both basis states for that memory experiment, to
+an exponential decayp L = 1
+2(1−Ae −t/τ) and extract
+the logical error per round from that fit, which isϵ L =
+1
+2(1−e−1/τ) where the uncertainties are propagated from
+the fitted decay constantτ. Figure 2(b) shows the mem-
+ory survival 1−2p L per syndrome extraction round for
+bothXandZmemory. For each data point we collect
+4 runs of 2048 shots (runs have longer separations than
+shots), all on the same day, and aggregate together all
+runs when calculating the logical error probabilities.
+We ultimately find a logical error per round of 2.56%−
+4.11% when operating this full-device memory experi-
+ment (performing leakage post-selection). Even without
+leakage post-selection, our best memory results achieve
+similar logical errors per round (see Appendix A). The
+best logical errors per round observed for memory were
+4.4% and 2.9% in theZandXbases, respectively, with-
+out leakage post-selection (data collected on a different
+day than that of Fig. 2). These data compare favorably
+to other experiments on heavy-hex devices. Ref. 76 found
+heavy-hex code logical errors per round of <∼ 6% forZ
+memory experiments and<∼ 12% forX. Results from our
+previous work [19, 45] sat around 3−4% logical error per
+
+6
+2 × 10−2 3 × 10−2 4 × 10−2 6 × 10−2
+Logical error per round
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Cumulative fraction of patches below x
+Z 5 × 5, Median: 0.0403
+Z 7 × 7: 0.0479
+Z 7 × 7; defects removed: 0.0413
+X 5 × 5, Median: 0.0325
+X 7 × 7: 0.0415
+X 7 × 7; defects removed: 0.0340
+Z memory X memory
+0.00
+0.01
+0.02
+0.03
+0.04
+0.05
+0.06
+0.07
+Logical error per round (mean over patches)
+0.041
+0.036
+0.048
+0.0410.041
+0.034
+5 × 5
+7 × 7
+7 × 7;
+defects removed
+(a)
+(b)
+FIG. 4.Scaling memory experiments.We show the logi-
+cal error per round for 5×5 and 7×7 codes, the latter both
+with and without defect mitigation. We use a BeliefMatching
+decoder and ACES noise information for all decoding. (a) Cu-
+mulative distributions of logical error per round, inZandX
+memory, for nine 5×5-sized codes covering the footprint of the
+7×7 patch. Median logical errors are highlighted with orange
+circles. We mark the logical error of 7×7 patches both with
+(green) and without (blue) defect mitigation, in both bases.
+Shaded regions indicate the uncertainty of that patch’s log-
+ical error per round. (b) Comparison of mean logical error
+over patches of size 5×5 and 7×7, both with and without
+defect mitigation, in both bases. Shaded regions around the
+bars for 5×5 columns indicate standard errors of the mean
+over the distribution of patches. Error bars for 7×7 columns
+indicate uncertainties on logical errors. Data was collected on
+2026/06/19.
+round on carefully chosen regions of the device, running
+codes of size 3×3 or 5×5. We compare this to our
+current experiments run with the full monolithic device
+while achieving similar performance.
+Comparison of defect-exclusion strategies —In
+Fig. 3, we report the percentage improvement in logi-
+cal error obtained by excluding different defect combi-
+nations (compared to a baseline of no defects excluded;
+note that data was collected on a different day to that of
+Fig. 2). We compare excluding only the defective com-
+ponents around qubit 46, only those around qubit 85,
+and excluding both. We find that excluding both sets
+of defective components results in the lowest logical er-
+ror per round. While we observe that q85 exclusion is
+no different to excluding both defects in theZbasis, we
+observe thatXbasis memory experiments are improved
+by excluding both defects.
+We also observe that the benefit of excluding defects is
+retained even when supplying the decoder with very ac-
+curate ACES noise information. Indeed, in Fig. 3, we
+compare the percentage improvement obtained by de-
+fect exclusion across three different decoder approaches,
+and observe little difference between using reported and
+ACES noise, indicating that the defects set a floor in
+performance that cannot be passed by improving the
+decoder. However, using a worse decoder and noise
+model does result in the largest gains from defect ex-
+clusion, of∼40% and∼36% inZandXbases re-
+spectively. These result from using a minimum-weight
+perfect matching decoder [85] informed using a simple
+global noise model that was chosen to result in reasonable
+performance across all days tested (See Section IV A).
+Hence, noise-informed decoding can reduce the improve-
+ment seen from defect exclusion up to a point, but beyond
+this, active defect exclusion results in a roughly constant
+percentage improvement. With an ACES-informed Be-
+liefMatching decoder, we see up to∼28% and∼27%
+improvement inZandXbases, respectively. We pro-
+vide further data used to generate Fig. 3 in Appendix A.
+As a control, in Appendix A, we demonstrate that ex-
+cluding a non-defective component in the same patch
+worsens performance, indicating that the gains we ob-
+serve are indeed due to defect exclusion strategies.
+Average performance at break-even when scaling a dy-
+namic compass code from5×5to7×7—To gather
+information about the current state ofHeronclass quan-
+tum processors, we interrogate how far scaled memory
+experiments are from break-even onibm boston. We
+present results for bothZandXbases in Fig. 4. Us-
+ing BeliefMatching and ACES information, we find that
+the 7×7 patch with defect exclusion is very close to the
+median and mean 5×5 patch performance in both bases.
+Note that we only consider the nine 5×5 patches that
+lie within the footprint of the 7×7 patch. Indeed, in the
+Xbasis, defect exclusion allows the 7×7 patch to beat
+the average 5×5 patch logical error per round. How-
+ever, we observe that the average 3×3 code still outper-
+forms both larger code sizes, owing to many small codes
+that can avoid all underperforming components (see Ap-
+pendix A).
+
+7
+Step 2Step 1
+Step 3Step 4
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+16 17 18 19
+20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+36 37 38 39
+40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55
+56 57 58 59
+60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75
+76 77 78 79
+80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95
+96 97 98 99
+100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115
+116 117 118 119
+120 121 122 123 124 125 126 127 128 129 130 131 132 133 134 135
+136 137 138 139
+140 141 142 143 144 145 146 147 148 149 150 151 152 153 154 155
+(a) (b)
+FIG. 5.Stability experiment for the dynamic compass code onibm boston.(a) We perform stability experiments using
+the 5×5-sized patch shown in its location on the device. The qubit color conventions are the same as those used in Fig. 1. The
+product ofXchecks in any time step across the entire patch evaluates to +1 in the absence of noise. (b) We perform defect
+exclusion using the same methods as in memory experiments (see Section IV). Once excluding defective components around
+qubit 85 (excluded qubits shown in black), the period-4 measurement sequence is shown, with unshaded blue/red plaquettes
+indicating theX/Zmembers of the instantaneous stabilizer group, respectively. Shaded plaquettes indicate checks that are
+measured in that step.
+C. Stability Experiments and Fault-Tolerant Logic
+We quantify the expected performance of fault-tolerant
+logic gates by performing stability experiments with the
+dynamic compass code onibm boston[19, 29, 30]. We
+construct a 5×5-sized stability patch that covers a large
+proportion of the device, see Fig. 5(a) for placement. We
+cannot fit a stability patch of the same size as the memory
+patch, owing to the additional row ofX-measure qubits
+required, so we choose a 5×5 stability patch.
+In our stability experiment, the boundary conditions
+are determined such that the product of allX-checks in
+a given time step is equal to the identity. Hence, in the
+absence of noise, the product of allX-check measurement
+outcomes at each round of the circuit is +1. If, after de-
+coding overNmeasurement rounds, this observable reads
+−1, we report a logical failure. Measurement-based gates
+such as lattice surgery require a product of stabilizers to
+be accurately measured. Stability experiments therefore
+help to quantify the ability of the device to perform lat-
+tice surgery operations, as the observable being tested
+is a product of stabilizers. The distance of a stability
+experiment is independent of the size of the patch. Con-
+versely, we expect the circuit distance to scale linearly
+with the number of syndrome extraction rounds. Hence,
+when below threshold, we expect to see an exponential
+decrease in failure probability as we increase the number
+of rounds. Note that, because mid-circuit resets can-
+not be performed inibm boston, the time-like distance
+of our experiments is⌈N/2⌉, whereNis the number of
+syndrome extraction/measurement rounds [86].
+We perform stability experiments on a patch of suf-
+ficient size that, for any placement, it will necessarily
+include some defective components. As such, our exper-
+iments test the effect of defect exclusion on stability ex-
+periments. We chose to position the patch as in Fig. 5(a)
+so that qubit 85 lay close to the middle of the patch.
+Defects appearing near code boundaries can only be ex-
+cluded by deforming the boundaries around the defects,
+thereby resulting in a smaller patch, which itself results
+in better stability performance [29]. The placement of
+the patch in our experiments therefore allowed us to test
+the effect of defect exclusion on stability, without chang-
+ing the size of patch used. For this reason, even though
+qubit 46 was also covered by the patch, we did not ex-
+
+8
+N = 5 rounds N = 30 rounds
+0.0
+0.1
+0.2
+0.3
+0.4
+Failure probability
+0.372
+0.343
+0.254 0.236
+0.346
+0.323
+0.210
+0.153
+2.1%
+abort
+per rd
+2.1%
+abort
+per rd
+Reported Noise, hard
+ACES Noise, soft
+ACES, q85 out, soft
+ACES, q85 out, soft, PS (cutoff 0.7)
+1 5 10 15 20 25 30 35
+Syndrome extraction rounds
+0.1
+0.2
+0.3
+0.4
+0.5Failure probability
+Reported Noise, hard
+ACES Noise, soft
+ACES, q85 out, soft
+ACES, q85 out, soft, PS (cutoff 0.7)
+(a) (b)
+FIG. 6.Stability experiment results.Stability experiments are performed as in Fig. 5. (a) We report the total failure
+probability from stability experiments afterN= 5 andN= 30 rounds of syndrome extraction. We find successive improvements
+in stability performance from incorporating ACES noise information (with soft information), defect exclusion, and leakage post-
+selection (see Table II). We compare to a baseline of a reported noise model with no soft information (blue). We then supply
+the decoder with soft information and ACES noise information (red). We compare this strategy to one of defect exclusion,
+excluding the components around qubit 85, and using ACES noise and soft information (orange). Finally, we post-select on
+shots that are unlikely to include leaked qubits, with a cutoff probability of 0.7 (light green). For leakage post-selection, we
+fit the abort probability as a function of rounds to an exponential decay,p abort = 1−e −N/τa, and report the per-round abort
+probability, 1−e −1/τa. (b) We report the stability failure probability for values ofN, the number of syndrome extraction
+rounds, between 1 and 35. The decoder, code and post-selection conditions used are the same as in (a). Data was collected on
+2026/06/01.
+No mitigation q85 out No mitigation q85 out0.0
+0.1
+0.2
+0.3
+0.4
+0.5
+Failure probability at N = 5
+0.343 0.343
+0.259 0.254
+0.372
+0.341
+0.291
+0.256
+−0.1%
+−2.0%
+−8.2%
+−11.9%
+ACES noise Reported Noise
+Hard decoding Soft decoding
+FIG. 7.Effect of soft information decoding.We com-
+pare the effect of soft information decoding in stability ex-
+periments when informing the BeliefMatching decoder with
+either reported noise or ACES noise information. We show
+the failure probability atN= 5 rounds over two defect con-
+figurations and two noise models, both with and without soft
+information. Both when we use no defect mitigation and when
+we exclude the qubit 85 defect we observe that soft informa-
+tion only makes a statistically significant difference in stabil-
+ity performance when using the reported noise information.
+When using ACES, no difference is seen when incorporating
+soft information. The percentage difference in failure proba-
+bility between hard and soft decoding is reported at the tops
+of pairs of bars. Data was generated on 2026/06/01.
+clude it. In Fig. 5(b), we show the measurement sequence
+for the defect-excluded stability patch.
+In Fig. 6, we compare stability performance across four
+decoding strategies similar to the 7×7 memory experi-
+ments. In stability experiments, however, we also employ
+soft measurement information in some of our strategies;
+see Table II. In Fig. 6(a), we compare the failure prob-
+ability afterN= 5 measurement rounds andN= 30
+rounds for each method. The overall improvements from
+a combination of ACES-noise decoding, soft information,
+and defect exclusion are striking. Firstly considering no
+post-selection, atN= 5, we see an improvement in the
+failure probability from 0.372 to 0.254, giving a reduction
+in overall failure probability of 32%.AtN= 30, we see
+an improvement from 0.346 to 0.21, giving a reduction
+of 39%. When combining leakage post-selection with the
+above, we see the largest improvements, of up to 56%
+atN= 30. However, leakage post-selection on the full
+patch was not sufficient to reproduce the effects of defect
+exclusion (see Appendix B).
+Crucially, the combination of defect exclusion and leak-
+age post-selection produces clear error suppression up to
+N= 30 rounds. Figure 6(b) illustrates failure probability
+as a function of the number of rounds. Without defect
+exclusion, the failure probability is suppressed initially
+by increasing the number of syndrome extraction rounds,
+but plateaus after around 12 rounds. With defect miti-
+gation excluding defective components around qubit 85,
+we see not only an improvement of the failure probability
+after a few rounds but we observe suppression up to 30
+syndrome extraction rounds. We note that Pauli noise
+simulations do not capture this plateau phenomenon in
+stability experiments, and we attribute it to leakage in
+
+9
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+16 17 18 19
+20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+36 37 38 39
+40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55
+56 57 58 59
+60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75
+76 77 78 79
+80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95
+96 97 98 99
+100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115
+116 117 118 119
+120 121 122 123 124 125 126 127 128 129 130 131 132 133 134 135
+136 137 138 139
+140 141 142 143 144 145 146 147 148 149 150 151 152 153 154 155
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+16 17 18 19
+20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+36 37 38 39
+40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55
+56 57 58 59
+60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75
+76 77 78 79
+80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95
+96 97 98 99
+100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115
+116 117 118 119
+120 121 122 123 124 125 126 127 128 129 130 131 132 133 134 135
+136 137 138 139
+140 141 142 143 144 145 146 147 148 149 150 151 152 153 154 155
+Data Z measure X measure Routing
+Unused X stabilizer Z stabilizer LS X stabilizer
+(a) (b)
+FIG. 8.Lattice surgery onibm boston:Location of two lattice surgery experiments performed onibm boston. (a) Two
+3×3 codes (qubits 28 and 87 in the top-left of the patches) with surgery measurements (blue shaded checks) along the seam
+gluing the two patches together and thereby reading out the ¯X1 ¯X2 operator. (b) Two 4×3 codes (qubits 47 and 107 in the
+top-left of the patches) offer greater protection againstXerrors during the merge stage.
+the device.
+The stability experiments we perform here are large
+when compared with other recent experiments, in terms
+of the number of check measurements per round (16 for
+the patches in Fig. 5, compared to 12 in Ref. [18], 6 in
+Ref. [19], and 4 in Ref. [21]). Using a 5×5 patch for
+our stability experiment, our techniques achieve stability
+failure probabilities as low as 15.3%, which is compara-
+ble to previous results (14.7% in Ref. [19], 12.6% with
+defect-exclusion in Ref. [18], 17.6% in Ref. [21]). Indeed,
+all of these previous examples of stability experiments
+were conducted on smaller patches where we expect per-
+formance to be better.
+Soft information —We also consider the effect of soft
+information independently on decoder accuracy. From
+IQ measurement data, we obtain probabilities that each
+qubit was in state 0, 1, or leaked. When decoding with
+soft information, we set the prior probability of a mea-
+surement error in the decoder to be min(p0,p 1)/(p0+p 1).
+Figure 7 compares the effect of soft vs. hard decoding us-
+ing ACES and reported noise models. When using ACES
+noise, we observe negligible improvement from soft infor-
+mation, but when using reported noise, soft information
+produces a statistically significant improvement, making
+the results indistinguishable from the ACES noise results.
+This indicates that for stability experiments, soft infor-
+mation from IQ-plane data may be sufficient for achiev-
+ing high accuracy decoding, even when a detailed noise
+model is unavailable.
+D. Lattice Surgery
+To evaluate the performance of the device across mem-
+ory and logic simultaneously, we perform lattice-surgery
+experiments. We use these to prepare logical Bell states
+and perform logical state teleportation. Through com-
+binations of pre-selection and post-selection filters, we
+achieve logical Bell fidelities and teleportation success
+probabilities over 97%. We report logical Bell state
+preparation experiments here, and teleportation exper-
+iments in Appendix C.
+Figure 8 shows the placement of two surgery exper-
+iments: we consider two 3×3 codes (Fig. 8(a)) and
+two 4×3 codes (Fig. 8(b)). This code positioning en-
+ables lattice surgery but avoids any significantly under-
+performing couplers or qubits. For the 3×3 surgery ex-
+periment we use the standard heavy-hex code measure-
+ment schedule [46], where all the Pauli-Z checks are mea-
+sured simultaneously in every round of measurements.
+In this case, due to the dimensions of the experiment,
+the Pauli-Xinstantaneous stabilizers are weight-6. As
+such, we gain little by using the dynamic compass code
+schedule to further decrease the weight of the stabiliz-
+
+10
+TABLE I. Lattice surgery Bell fidelity upper and lower bounds
+with and without pre-selection.
+3×3 surgery 4×3 surgery
+No pre-selection 58.6%−73.5% 60.4%−78.4%
+Full pre-selection 77.3%−84.5% 76.6%−87.3%
+ers. The gains from more frequentZ-check measurement
+outweigh the cost of slightly larger-weightXstabilizers.
+The full four-step sequence of the dynamic compass code
+is used for the 4×3 lattice surgery. Owing to the greater
+X-distance of the 4×3 codes, this lattice surgery exper-
+iment should offer greater protection against logicalZ
+failures in memory during the merge step.
+To characterize the surgery experiments, we calculate
+lower and upper bounds of the logical Bell fidelity. We
+do this by measuring the logical Bell-state correlators
+⟨ ¯Z1 ¯Z2⟩and⟨ ¯X1 ¯X2⟩from logical qubit readouts after the
+lattice surgery. Data qubits are initialized in|0⟩and the
+lattice surgery is performed forr= 5 rounds (this main-
+tains a time-like distance of 3 for circuits without resets)
+to read out the ¯X1 ¯X2 observable (product of blue shaded
+plaquettes in Fig. 8), obtaining outcomem X. Subse-
+quently, the patches are split and one more round of syn-
+drome extraction is performed for both separated codes.
+Then, data qubits are measured out either in theZba-
+sis to determine the ¯Z1 ¯Z2 observable or in theXbasis
+to determine ¯X1 ¯X2 again. We then perform decoding
+with BeliefMatching, with observables set to either the
+readout outcomes of ¯Z1 ¯Z2 or the product ofm X with
+the readout of ¯X1 ¯X2. We are unable to measure ¯Y1 ¯Y2
+fault-tolerantly. However, we can estimate bounds on
+the Bell fidelity using 1
+2(⟨mX ¯X1 ¯X2⟩+⟨ ¯Z1 ¯Z2⟩)≤F Bell≤
+1
+2(1 + min{⟨mX ¯X1 ¯X2⟩,⟨ ¯Z1 ¯Z2⟩) (See Section IV E).
+Without any filtering, the logical Bell fidelity bounds
+are given in the first row of Table I. In teleportation ex-
+periments, we initially observe an average success prob-
+ability across allXandZbasis states of 79.6%. To
+improve these results we implemented slightly different
+strategies for the different experiments.
+3×3surgery —We perform pre- and post-selection
+as follows. First, we pre-select on shots where we have
+high confidence that the initial state does not exhibit
+any leakage, and where we were correctly projected into
+the initial code state (see Section IV F). In addition, we
+consider logical gap post-selection using an exclusive de-
+coder [82, 87–89] as follows: we compute a PyMatching
+confidence score for each shot, given by the difference
+in minimum matching weight between the decoder’s pre-
+ferred logical sector and the best correction constrained
+to the opposite logical sector. We only keep shots whose
+gap exceeded a chosen threshold. These post-selected
+shots are then decoded using a BeliefMatching decoder.
+Figure 9(a) shows the results of applying pre-selection
+filters, together with the effect of using post-selection
+with an increasing logical-gap threshold, for the 3×3
+lattice surgery experiment. The Bell fidelity bounds ob-
+tained using pre-selection are given in the second row
+of Table I. This strategy filtered out 86.7% of the exper-
+iment starting attempts. Logical gap post-selection then
+improved these fidelities further. For example, rejecting
+shots with a logical gap of less than 8 provides improve-
+ment of the logical Bell fidelity lower/upper bound to
+95.8%−97.8% with a relative yield of 34.3% (the total
+yield after all filters is 4.55%). With a threshold of 9,
+we can achieve Bell fidelities above 97%, with a post-
+selection yield of 27%. For teleportation experiments,
+only using pre-selection filters produced an average suc-
+cess probability of 87.9%, while performing pre- and post-
+selection, we obtain an average success probability of
+98.25% with a relative yield of 45.9% (see Appendix C).
+In order to determine whether we are still in an error-
+correction regime, or if we are simply post-selecting on
+shots with no detectors firing, we calculate the aver-
+age number of detector violations per-round after post-
+selection. At a logical gap threshold of 8, the average per-
+round detector violations only drops from 1.16 to 0.91,
+indicating that we are still actively correcting many er-
+rors over all shots performed. We report further data,
+showing the effect of all individual pre-filters and post-
+selection, in Appendix C.
+We are not aware of results that demonstrate this high
+a fidelity when performing lattice surgery between two
+error-correcting (d >2) codes in superconducting archi-
+tectures. For example, Ref. 22 report post-selected Bell
+fidelities of up to 78% with 6.3% shot yield when perform-
+ing lattice surgery between twod= 3 repetition codes.
+Meanwhile, Ref. 90 reports up to 92.5% with 0.5% shot
+yield for lattice surgery between twod= 3 surface codes.
+4×3surgery —When using the combination of pre-
+selection filters on the 4×3 surgery results, we ob-
+tain a yield of 10.34% and a Bell fidelity lower bound
+slightly worse than the 3×3 results under the same
+conditions (second row of Table I). When adding post-
+selection to this experiment, we found little benefit from
+using the PyMatching confidence score as a post-selection
+filter. This is because increasing logical gap threshold
+eventually decreased Bell fidelity estimates; the maxi-
+mum attainable Bell fidelity lower bound was less than
+91.5%. Instead, we use the BeliefMatching decoder as a
+confidence filter. We only kept shots where the belief-
+propagation stage converged after 20 iterations, comput-
+ing the logical correction on that accepted subset. With
+this post-selection filter we found that neither the leakage
+pre-filter nor the code-state preparation filter improved
+the results. It appears that conditioning acceptance on
+the ability of the belief-propagation stage to converge al-
+ready removes such problematic runs. Using this filter
+we were able to achieve a logical Bell fidelity range of
+95.8%−97.5% with a yield of 9.64% and an average per-
+round detector activity of 1.4 (see Fig. 9(b)).
+
+11
+0 1 2 3 4 5 6 7 8 9
+PyMatching logical-gap threshold
+0.75
+0.80
+0.85
+0.90
+0.95
+1.00
+Bell fidelity
+3 £ 3 lattice surgery, after pre-selection filters
+1.16
+1.16
+1.16
+1.16
+1.16
+1.13
+1.08
+1.00
+0.91
+0.81
+Bell fidelity upper bound
+Bell fidelity lower bound
+Yield after gap filtering
+0
+20
+40
+60
+80
+100
+Yield after gap filtering (%)
+(a)
+Raw Belief
+100.0% yield
+BP converged
+9.6% yield
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Bell fidelity
+0.604
+0.958
+4 £ 3 lattice surgery
+2.74
+1.40
+Upper bound
+Lower bound (b)
+FIG. 9.Logical Bell fidelities from lattice surgery.(a) Bell fidelity for the 3×3 lattice surgery experiment shown in
+Fig. 8(a). We initially pre-select on shots that satisfy both: (i) no leakage detected; and (ii) only trivial syndromes for the
+initial stabilizers observed (see Section IV F). This indicates that the code is prepared in the code space before the lattice
+surgery is attempted. Five rounds of lattice surgery are performed, before the logical qubits are separated. We then perform a
+split of the two patches and finally implement a last round of syndrome extraction before the data qubits are read out in the
+appropriate basis. Further post-selection is then carried out on a per-shot basis depending on the logical gap calculated by a
+PyMatching decoder. Final decoding is then performed using the BeliefMatching decoder. The x-axis shows the logical gap
+thresholds evaluated with an exclusive decoder (shots with a logical gap smaller than this are rejected). Also plotted are the
+post-selection yields, calculated as a percentage of the shots that have already passed the pre-selection filters. Printed on the
+bars are the average number of detector violations per round. The lighter shaded (solid) bars show the upper (lower) bound of
+the estimated Bell Fidelity. (b) Logical Bell fidelity for the 4×3 lattice surgery experiment from Fig. 8(b), with 4×3-sized code
+patches. Belief propagation convergence is used to perform post-selection on shots: if the belief propagation round converged
+after 20 iterations, the shot was accepted. Left shows the results without this filter, right the results with the filter. In both
+cases, no pre-selection filter was applied. All data was collected on 2026/07/17.
+III. DISCUSSION
+In this work, we have demonstrated key elements of
+quantum error correction and fault tolerance with the
+dynamic compass code on a heavy-hex lattice of 156
+superconducting qubits, by running high-fidelity mem-
+ory, stability and lattice surgery experiments. We com-
+bine noise-informed decoding, defect exclusion, and leak-
+age post-selection to achieve significant improvements in
+memory and stability, and a collection of pre- and post-
+selection techniques to achieve large improvements in lat-
+tice surgery. Our results reveal key lessons for future
+fault-tolerant devices.
+We have seen that leaky and under-performing com-
+ponents can severely limit error-correction performance.
+We analyze the role of leakage in our experiments by
+post-selecting on runs without any detected leakage. This
+leakage post-selection consistently improved performance
+of logical elements. A variety of strategies exist and have
+been tested for reducing leakage in error-correction ex-
+periments [9–13, 91–94], and these will likely be neces-
+sary in future generations of devices. Defects resulted in
+bottlenecks to improving performance in our experiments
+and we overcame this issue by introducing defect exclu-
+sion techniques for the dynamic compass code. Large
+numbers of defects will limit the code distances achiev-
+able in manufactured chips, indicating that future devices
+may need to improve component homogeneity in order to
+see further large performance gains.
+We have also seen very sizable benefits from combining
+pre- and post-selection filters in lattice surgery, which is
+of significant relevance to future error-correction exper-
+iments. The pre-selection filters that we use in lattice
+surgery experiments are qualitatively different than post-
+selection techniques. Pre-selection allows us to probe the
+failure mechanism associated with the logic gate itself, re-
+moving those mechanisms associated with initializing in a
+leaked state of the processor or failing to prepare the code
+space of one or both of the codes. These filters could in
+principle be applied before any long experiments are be-
+gun, as part of a prepare-until-succeed loop [16]. Hence,
+these could potentially be important components of fu-
+ture experiments for maximizing observed fidelities. Sep-
+arately, lattice surgery often features in magic state facto-
+ries, which can effectively make use of post-selection [33].
+Performing logical gap post-selection on lattice surgery
+within such parts of a fault-tolerant architecture could
+potentially be a scalable [79–82, 87] method to further
+boosting resource state fidelities with the additional ad-
+vantage of aborting low-confidence shots early.
+Finally, we observe that good noise characterization,
+accurate decoding and measurement soft information,
+while improving performance up to a degree, are ulti-
+mately insufficient to overcome the deleterious effects of
+defects. However, we have not investigated decoders with
+higher accuracy than BeliefMatching [83]. Neural net-
+work decoders [95–98] or most-likely error decoders [99]
+could be investigated in future work to see if these could
+
+12
+potentially overcome the need to remove certain under-
+performing components. We note that the gains seen
+from using soft information in stability experiments dis-
+appear when using ACES-noise information. This could
+be practically useful for future experiments, since collect-
+ing ACES data can be costly in terms of device time and
+classical processing time required. However, it would be
+important to know in what regimes these findings hold.
+Future generations of quantum processors will need to
+improve component homogeneity, to avoid the need for
+excessive defect exclusion, and will require fast, multi-
+level resets or other techniques to actively remove leak-
+age. They will need to maintain high component fideli-
+ties and homogeneity while scaling to larger sizes of chip.
+The use of defect exclusion strategies that are far less
+costly in terms of distance and fidelity could be achieved
+by considering designs with more connectivity between
+qubits [18]. There will in general be an interplay be-
+tween chip homogeneity, component fidelity, and fabrica-
+tion yield, with greater qubit connectivity increasing tol-
+erance to defects. We envisage that these future devices
+will allow for further key error-correction primitives to be
+demonstrated, such as magic state injection and distilla-
+tion, a greater array of Clifford operations, and real-time
+accurate decoding. Finally, future quantum processors
+with a large number of logical qubits will require even
+more qubits and/or other innovations such as long-range
+connectivity that will allow for larger-distance quantum
+codes and lower logical error rates.
+IV. METHODS
+A. Noise models, defect exclusion, and leakage
+post-selection
+In Table II, we provide a summary of the columns in
+Figs. 2 and 6. We use either a reported noise model (ex-
+plained below) or an ACES noise model (explained in
+Refs. 45, 55, and 56), and we exclude defects (explained
+in Section IV B), and perform leakage post-selection (ex-
+plained in detail in Ref. 45).
+For some decoding, we report using a “simple” global
+noise model. This was chosen to perform comparably to
+other noise models regardless of the day of data collec-
+tion. In Table III, we provide the parameters and loca-
+tions in the circuit in which noise was introduced in that
+noise model.
+We now explain how the reported noise models were
+constructed. For the memory and stability experi-
+ments, we construct the reported-noise baseline from the
+IBM calibration snapshot supplied with the experimen-
+tal dataset, obtained on the same date as data collection.
+Following the calibration-snapshot approach of Ref. [45],
+we use the reported error rates to parameterize a circuit-
+level Pauli noise model that supplies prior probabilities
+to the decoder. We retain the values for individual phys-
+ical qubits and couplers, including those associated with
+defective components, rather than averaging them over
+the device. Each retained parameter is fixed across cir-
+cuit layers and experimental shots. This model therefore
+captures spatial variations in the reported noise, while
+omitting the layer-specific characterization provided by
+ACES.
+Gate and idle errors.The fields used from the snap-
+shot are listed in Table IV. For a single-qubit gate acting
+on qubitq, we use itsRX erroras the probabilitypin
+the depolarizing channel
+D1,p(ρ) = (1−p)ρ+ p
+3
+X
+P∈{X,Y,Z}
+PρP.(1)
+For a two-qubit gate on a coupler connecting qubitsq
+andq′, we use the correspondingCZ errorin
+D2,p(ρ) = (1−p)ρ+ p
+15
+X
+P∈P 2\{I⊗I}
+PρP,(2)
+whereP 2 ={I,X,Y,Z} ⊗2. Coupler error rates are in-
+dexed by the unordered pair of physical qubits. These
+channels are attached to the corresponding ideal opera-
+tions in the syndrome-extraction circuit. An idling qubit
+receives the channel in Eq. (1), withpgiven by itsID
+error, at each idle location specified by the circuit sched-
+ule, including when it remains idle while other qubits un-
+dergo mid-circuit measurements. After the preprocessing
+described below, the reported values are used directly as
+the Pauli error probabilitiespin these equations.
+Measurement errors.IBM supports two measure-
+ment pulses with different durations, whose reported er-
+ror rates are listed asMEASURE errorfor the longer pulse
+andMEASURE 2 errorfor the shorter pulse. In our cir-
+cuits, we use the longer pulse for final data-qubit read-
+out and the shorter pulse for mid-circuit syndrome read-
+out. Each reported measurement error probabilitypis
+assigned to an independent classical flip of the recorded
+outcome, leaving the post-measurement quantum state
+unchanged. Note that this assignment differs from the
+pre-measurement-noise convention used for the calibra-
+tion baselines in Ref. [45]. The reported measurement
+error alone does not resolve the contributions of quantum
+errors before measurement and classical assignment er-
+rors, so their allocation is a modeling assumption. When
+soft information is used, the probabilities of classical mea-
+surement errors are updated on a shot-by-shot basis using
+IQ data; this does not change the gate or idle parameters
+defined here.
+Unavailable and unit-valued entries.We treat zero,
+missing, and non-finite error entries as unavailable and
+replace them with the mean of the finite nonzero entries
+of the same operation type in the snapshot. For the two-
+qubit errors, this procedure uses the reported coupler-
+error entries. Probabilities are restricted to the interval
+[0,1]. The data provided by IBM contain entries with
+an error probability of 1.0. We regard these entries as
+indicating a problem with the characterization process
+or the reported data, and replace them with the largest
+
+13
+TABLE II.Noise-informed strategies.We compare the noise model, syndrome extraction circuit, and degree of post-
+selection used in each experiment.
+Noise model Memory Stability
+Reported Noise
+(blue data)
+Set the prior probabilities of each noise process using
+IBM-reported characterization data foribm boston. The
+construction of this Pauli noise model is described below.
+Same as memory.
+ACES Noise
+(red data)
+A Pauli noise model extracted using ACES [100, 101], which
+has layer-specific reconstructed noise information.
+As with memory, but also
+using soft measurement
+information.
+ACES, q46 and q85
+excluded
+(orange data)
+Same as ACES Noise, using the syndrome extraction circuit
+that excludes qubits 46 and 85, see Fig. 1(b).
+As with memory, but only
+excluding qubit 85 and
+using soft information.
+ACES, q46 and q85
+excluded, PS at
+cutoffp
+(light green data)
+Same as ACES, excluding q46 and q85. Additionally, shots
+that report greater thanp= 0.9 probability that any measured
+qubit has leaked, using IQ data, are discarded.
+As with memory, but only
+excluding qubit 85, using
+soft information, and with
+cutoff probabilityp= 0.7.
+TABLE III. Simple noise model parameters.
+Noise location Noise channel and strength
+Single-qubit gatesDEPOLARIZE1(0.0005)
+Two-qubit gatesDEPOLARIZE2(0.003)
+Idling during two-qubit gatesDEPOLARIZE1(0.0005)
+Idling during measurementsDEPOLARIZE1(0.01)
+Pre- and post-measurement
+error
+X-ERROR(0.01)
+Classical measurement errorM(0.01)
+TABLE IV. Reported fields used to construct the baseline
+noise model. The gate and idle fields set depolarizing proba-
+bilities; the measurement fields set classical readout outcome
+flip probabilities.
+Snapshot field Circuit assignment
+RX errorSingle-qubit gate on the reported
+qubit
+CZ errorTwo-qubit gate on the reported
+coupler
+ID errorIdle location on the reported qubit
+MEASURE errorLonger pulse, used for final
+data-qubit readout
+MEASURE 2 errorShorter pulse, used for mid-circuit
+syndrome readout
+finite probability strictly below unity for the same opera-
+tion type. This retains a high error prior for the affected
+component while avoiding an error probability of one.
+The replacement is carried out independently for theRX,
+ID,CZ,MEASURE, andMEASURE 2fields.
+Scope of the approximation.The baseline does not
+infer additional noise channels from the reportedT 1 or
+T2 times, nor does it rescale idle errors using gate or
+readout durations. In particular, qubits that remain idle
+while other qubits are measured use the same reported
+ID error, even though measurements can take substan-
+tially longer than gates. No separate reset error or post-
+measurement state error is added, and leakage dynamics
+and temporal drift are not modeled explicitly.
+B. Defect exclusion strategies
+Defective components in the Boston device tend to ag-
+gregate around particular locations. The couplers around
+qubits 146, 46 and 85 tend to consistently underperform,
+while other qubits and couplers have varying levels of
+performance. We choose to limit defect exclusion to two
+locations within the code patch so as to avoid reducing
+the distance of the 7×7 patch to less than 5 in both bases.
+On all days tested, couplers around qubits 85 and 146 had
+CZgate errors that were 2-3 orders of magnitude larger
+than the medianCZgate error across the device, and the
+next-worst coupler was consistently neighboring qubit 46.
+Meanwhile,T 1 andT 2 times were often poorest for qubits
+85, 146 and 46. Specifically, on the date during which the
+majority of our data was taken (2026/06/01), qubit 46
+had the worstT 2 time (4.23µs) and the second-worstT 1
+time behind qubit 85 (9.38µs). On another data collec-
+tion date (2026/06/19), qubit 46 had the second-worst
+T1 time behind qubit 85 (14.45µs) but a betterT 2 time
+relative to other qubits. Owing to the underperforming
+couplers and qubits in those three regions specified, we
+chose to consistently treat these three locations as defec-
+tive and test defect exclusion strategies on them.
+We treat these defects in different ways. Qubit 146 lies
+on the bottom row of the chip. We can place a 7×7 code
+on the chip while avoiding the bottom row entirely and
+exclude the defective component in this way. Meanwhile,
+qubits 46 and 85 lie in the middle of any 7×7 code, and
+must be excluded by deforming the code. Note that ex-
+cluding any coupler from the code leaves one qubit with
+
+14
+(a) (b) (c)
+FIG. 10. Defect exclusion for qubits 46 and 85 inibm boston. Data qubits are shown in yellow,X(Z) measure qubits in blue
+(red), and unused qubits in black. (a) Defective couplers (red wavy lines) to be excluded from the patch and their adjacent
+qubits (black), which themselves may be defective, are identified. (b) Check operators with support on excluded components
+are truncated away from those components and now have reduced weight. (c) A check measurement schedule is assigned to
+minimize the weight of superstabilizers around the defects. Those checks measured in Step 2 (Step 4) of Fig. 1 are colored dark
+red (light red), and those checks on the top/bottom boundaries measured in both Steps are highlighted with stripes.
+only a single coupler touching it, owing to every cou-
+pler touching one valence-two qubit. If this semi-isolated
+qubit is a data qubit, it is prohibitively challenging to
+measure multiple checks that have support on that qubit,
+and hence we further exclude that data qubit from the
+code. In Fig. 10, we show how excluding underperform-
+ing couplers (red wavy lines) around qubit 85 (located
+on a 3-valent vertex) leaves all neighboring qubits semi-
+isolated (adjacent to only one remaining coupler). We ex-
+clude these from the code as well. Meanwhile, excluding
+qubit 46 and its adjacent couplers does not isolate neigh-
+boring qubits, which are located at vertices, so these are
+retained in the code.
+We restrict all checks to the qubits that remain in
+the code after excluding defective components and semi-
+isolated qubits. For the defect arrangement considered
+in our experiments, the result of these restrictions is
+shown in Fig. 10(b). Note that the checks now include
+single-data-qubit measurements in theZbasis and two-
+or three-qubitX-checks. We then construct a measure-
+ment sequence for these checks and form superstabilizers
+which change over the four steps of the QEC sequence, as
+shown in Fig. 1. We measure allX-checks in Steps 1 and
+3 as normal for the dynamic compass code, and measure a
+subset ofZ-checks in Step 2, with the remainingZ-checks
+measured in Step 4. We always chooseZ-checks that are
+in the same row as – and adjacent to – a superstabilizer
+to be measured in a different step to the superstabilizer.
+This helps maintain low-weightXsuperstabilizers in the
+vicinity of defects. The measurement pattern chosen is
+shown in Fig. 10(c). This results in maximum weight 10
+Xsuperstabilizers and maximum weight 8Zsuperstabi-
+lizers (see Fig. 1).
+Excluding defects from the code patch changes the dis-
+tance of the code. In Table V, we list theZandX
+distances of the code patches with one or both defects
+excluded from the patch.
+We have demonstrated how to exclude defective data
+qubits andZ-measure qubits (located on vertices of the
+CircuitZ-distanceX-distance
+Full patch 7 7
+q46 out 6 6
+q85 out 5 6
+Both out 5 5
+TABLE V. Distances for the the 7×7 dynamic compass code
+patches with defect mitigation.
+Step 1 Step 2
+Step 3
+Step 4
+(a)
+(b)
+FIG. 11. Exclusion of a defectiveX-measure qubit, shown in
+black. A small region of dynamic compass code is shown. (a)
+We show the checks of the new code. TheX-check that was
+to be measured at the defect is split into two 2-body checks,
+shown in blue. (b) The four-step measurement sequence for
+the dynamic compass code with the defect excluded is shown.
+Shaded plaquettes indicate measurements made in that step
+and unshaded regions indicate elements of the instantaneous
+stabilizer group during that step.
+lattice). Since we exclude semi-isolated data qubits, we
+therefore treat defective horizontal couplers as defective
+data qubits and perform defect exclusion in the same
+manner. For completeness, we also show the result of ex-
+cluding a defectiveX-measure qubit (located on vertical
+edges of the lattice), in Fig. 11. Since the correspond-
+ingX-check cannot be measured at that defective loca-
+
+15
+tion, we split it up into two-bodyX-checks, as shown
+in Fig. 11(a). These newly createdX-checks result in
+weight-8Z-superstabilizers appearing in the measure-
+ment schedule, as shown in Fig. 11(b). This results in a
+Z-distance of the code which is lowered by 2. Meanwhile,
+theX-distance of the code is maintained. Defective ver-
+tical couplers can be treated in a similar way, by splitting
+up theX-check at that location into two-body checks.
+The new two-bodyX-checks that appear in the defect-
+excluded codes (Figs. 10 and 11) can be measured by
+re-purposing theZ-measure qubits that they straddle,
+shown in red in the figures. However, to maintain a
+compressed measurement schedule, in whichZandX
+checks are measured in the same time step (important
+for achieving high logical fidelities [19]), we must adopt a
+different approach, which we outline in the next section.
+C. Syndrome measurement circuits
+Here, we provide more details on the syndrome mea-
+surement circuits performed during memory and stabil-
+ity experiments. We first describe the circuits used for
+the regular and defect-excluded dynamic compass code,
+then comment on detectors for circuits without resets,
+and finally discuss details of the circuits required for a
+compressed measurement schedule.
+1. Dynamic Compass Code Circuits
+RegularX-checks are measured using a depth-8 circuit
+of CNOT gates that connect the measure qubit (blue in
+Fig. 1) to the four data qubits (yellow) via theZ-measure
+qubits (red) to the North and South of theX-measure
+qubit. This circuit can be understood as four “via gates”,
+each performing one CNOT between anX-measure qubit
+and a data qubit. The via gates themselves are depth-4
+CNOT circuits, although we use circuit identities to lower
+the overall depth of theX-check measure circuit [19]. A
+depth-2 CNOT gate circuit is then used to extract the
+syndrome of a subset ofZ-checks. Measurements ofall
+ZandXmeasure qubits are then made simultaneously.
+The CNOT circuits for extractingXandZcheck infor-
+mation are described in more detail in Ref. 19 and can
+be seen in Fig. 12.
+Around defects, the checks measured include three-
+body and two-bodyX-checks, and single-bodyZ-checks.
+These lower-weightX-checks can be measured with sub-
+sets of the gates from the four-body check measurement
+circuit. For two-body checks, we can also simply use a
+circuit that measures out the parity information on the
+Z-measure qubit in between the two data qubits. Occa-
+sionally, we need to employ a different “Bell pair mea-
+surement” method, outlined below.
+We begin all memory experiments with a full set of
+Z-check measurements followed by a full set ofX-check
+measurements, which initialises the code space. In all
+data plots, we count the number of rounds as the number
+of measurement layers, equivalent to double the number
+of full four-step syndrome extraction cycles. We start
+from rounds performed after the setup of the code space.
+In Fig. 12, we show the circuit used to measure the
+specific checks shown in Fig. 10 and thereby implement
+the memory experiment of Fig. 1. Other circuits run in
+this paper are highly analogous. We show the circuit over
+two rounds (four steps) of syndrome extraction.
+2. Detectors
+We form detectors that compare the measurement of
+certain subsets ofXorZchecks. Detectors are defined
+to be the parity of sets of measurement outcomes, which
+are always equal to +1 in the absence of noise. Since
+ibm bostondoes not have functionality for mid-circuit
+resets, we perform memory and stability circuits without
+resets [19, 86], requiring us to modify the definition of de-
+tectors to accommodate this. IfM t denotes a determin-
+istic combination of measurement outcomes in roundt,
+corresponding to the measurement of an (instantaneous)
+stabilizer, then in the absence of noise and without resets,
+Mj>t =M t. For measurements of measure qubiti,m (i)
+t ,
+the true outcome of the measurement is 0 ifm (i)
+t =m (i)
+t−1,
+and 1 ifm (i)
+t ̸=m (i)
+t−1. Hence, we replace each measure-
+mentmt in the detector definitions with the combination
+mt⊕mt−1, since this results in detectors that are strictly
++1 (rather than simply +1 or−1 deterministically) in the
+absence of noise. Any measurement made that does not
+reveal stabilizer information nevertheless can be used to
+reveal flag information [46]. We compare the outcomes of
+these flag qubit measurements to their previously mea-
+sured values and form flag detectors in this way. These
+appear on boundaries as well as in the bulk of the code,
+sinceZ-measure qubits are not used to read out check
+information in half of the measurement rounds.
+Using our prescription of adding in the previous mea-
+surements (at the same qubits) to detectors can result
+in unnecessarily high-weight detectors, where we define
+the weight of a detector as the number of measurement
+outcomes that feature therein. In particular, whenZ
+measure qubits are not being used for syndrome extrac-
+tion (e.g., in Steps 2 or 4 of Fig. 1), they are nevertheless
+measured and we use these measurements to form flag
+detectors. We can use these flag detectors to reduce the
+weights of other detectors. In particular, the prescription
+of including previous measurement outcomes in detectors
+would normally result in weight-8Z-detectors (each mea-
+surement from the initial weight-4 detector in the circuit
+with resets,m (1)
+t m(2)
+t m(1)
+t−2m(2)
+t−2, picks up one previous
+measurement outcome). However two of these measure-
+ment outcomes (those att−1 andt−2) form a flag
+detector, since theZ-measure qubit is not being used for
+check readout at timet−1. Hence,m (i)
+t−1m(i)
+t−2 can be
+removed from theZ-detector. In the bulk of the circuit,
+
+16
+therefore,Zdetectors are maintained as only weight-4,
+and they compare twoZ-check outcomes in roundtwith
+the same checks’ outcomes in roundt−3.Xdetectors are
+formed analogously to detectors in surface codes without
+resets [18, 86]: we compare measurements in roundtto
+those in roundt−2, andXdetectors in the bulk also
+have weight 4.
+3. Bell pair measurements near defects
+Around defects, we sometimes need to measureXX
+andZZoperators on the same pair of qubits simultane-
+ously. See, for example, the two-bodyZandXchecks
+supported on data qubits immediately above and below
+the defect in Fig. 11(a) (see also the two-bodyXcheck
+in Fig. 1(b)). In Steps 3 and 4 of the measurement se-
+quence in Fig. 11(b), theZZoperators are not measured,
+and hence the two-bodyXXoperator is measured out
+using theZ-measure qubit, as is usual for two-body oper-
+ators in the code. We can achieve this without increasing
+the gate depth of the syndrome extraction circuit. How-
+ever, in Steps 1 and 2, we need to measure bothZZ
+andXXoperators simultaneously. This is sometimes
+possible to achieve using measure qubits, but for general
+defect patterns, it is not always the case that there are
+sufficient measure qubits available in the vicinity of the
+defect to perform both two-body measurements simul-
+taneously. Hence, in our circuits, we perform these as
+Bell-type measurements, measuring out thedataqubits
+to learn the check information.
+d1
+ZZ XX
+|0⟩ H
+d2
+=
+d1 H H
+|0⟩ H
+d2
+(3)
+In Equation 3, we show the circuit used for Bell mea-
+surement. This circuit is chosen to help reduce overall
+gate depth of the entire syndrome measurement circuit.
+The final gate on the right-hand side can be combined
+with another gate in the full circuit (this gate arises from
+the measurement of the same two-bodyX-check in the
+next round; not shown) and both can be simply deleted.
+The Bell-measurement circuit works as intended if the
+middle qubit is in state|0⟩. If it is in state|1⟩, theZZ
+measurement outcome is flipped. Hence, we include the
+outcome of the middle qubit measurement in theZde-
+tector. Meanwhile, at the end of Equation 3, the value
+of theXXoperator supported on the two data qubits
+is the product of the top two measurement outcomes.
+Hence the middle-qubit measurement outcome needs to
+be additionally included in subsequentX-detectors. The
+overall circuit when performing these Bell measurements
+is only increased in CNOT gate depth by 1 (see Fig. 12).
+D. Lattice surgery mechanics
+There have been some different proposed implemen-
+tations of lattice surgery in the literature e.g. [17, 44].
+Here we set out exactly the protocol we followed (see also
+Ref. 30). Unlike surface code lattice surgery, since we use
+the dynamic compass code (or the standard heavy-hex
+code), we can place two logical qubits in a vertical line
+without requiring an additional data-qubit strip between
+the two patches. This allows, for instance, two 3×3 codes
+to be combined into a 3×6 code during lattice surgery
+rather than a typical surface code setup which would re-
+quire a 3×7 combined code. Figure 8 shows two of the
+placements we use.
+For the Bell fidelity experiments, we prepare each log-
+ical qubit in the code space by initializing the qubits in
+|0⟩and performing an initial syndrome extraction round
+(which projects us into the code space). We then per-
+form one more full round of syndrome extraction which
+allows us to form a full set of bothX-check (phase-flip)
+andZ-check (bit-flip) detectors. The codes are then com-
+bined by measuring the stabilizers along the seam. After
+five syndrome extraction rounds of lattice surgery we stop
+measuring the checks across the seam, splitting the codes.
+We perform one more full extraction round on each of the
+logical qubits before measuring out the data qubits (inZ
+orXbases) and inferring the appropriate logical observ-
+able. If we measure out in theZbasis, the observable
+is the product ¯Z1 ¯Z2 obtained on readout. If we measure
+out in theXbasis, the observable is ¯X1 ¯X2 from read-
+out, combined with the outcomem X of that same logical
+operator obtained during lattice surgery. As described
+in Section IV E, the Bell-state we have projected into is
+determined by the product of the centralX-type merge-
+check outcomes on the seam. The reason we perform five
+rounds of syndrome extraction during the lattice surgery
+is because we are operating the device without resetting
+the measurement qubits. Five rounds are therefore re-
+quired in order to maintain a minimum distance of 3.
+E. Bell Fidelity
+For each of the experiments we estimate the logical
+Bell-state correlators⟨ ¯Z1 ¯Z2⟩and⟨ ¯X1 ¯X2⟩from the cor-
+responding readout circuits, after decoding. Our lattice
+surgery procedure is such that, in the absence of errors,
+⟨ ¯Z1 ¯Z2⟩= 1 and⟨ ¯X1 ¯X2⟩=m X =±1, depending on the
+outcome of the lattice surgery. Hence, we prepare the
+Bell state|Φ mX⟩= 1√
+2(|00⟩+m X|11⟩).
+
+17
+M M M M M M M
+M M M M
+M M M M M M M M
+M M M M
+M M M M M M M M
+M M M M
+M M M M M M M M
+M M M
+M M M M M M M M M
+M M M M
+M M M M M M M M
+M M M M
+M M M M M M M
+layer 1
+H H H H
+H HH H
+H H H H
+H H H
+H H H H
+H H H H
+layer 2
+ layer 3
+ layer 4
+ layer 5
+layer 6
+ layer 7
+ layer 8
+ layer 9
+H H H H
+H HH H
+H H H H
+H H H
+H H H H
+H H H H
+H
+layer 10
+layer 11
+M M M M M M M
+M M M M
+M M M M M M M M
+M M M M
+M M M M M M M M M M
+M M M M
+M M M M M M M M M M
+M M M
+M M M M M M M
+M M M M
+M M M M M M M M
+M M M M
+M M M M M M M
+layer 12
+H H
+layer 13
+ layer 14
+H H H H
+H H H H
+H H H H
+HH H
+H H H H
+H H H H
+layer 15
+layer 16
+ layer 17
+ layer 18
+ layer 19
+ layer 20
+layer 21
+ layer 22
+H
+H H H H
+H H H H
+H H H H
+HH H
+H H H H
+H H H H
+layer 23
+ layer 24
+M M M M M M M
+M M M M
+M M M M M M M M
+M M M M
+M M M M M M M M
+M M M M
+M M M M M M M M
+M M M
+M M M M M M M M M
+M M M M
+M M M M M M M M
+M M M M
+M M M M M M M
+layer 25
+FIG. 12. Syndrome measurement circuits used for 7×7 memory experiments with defect exclusion (qubits 46 and 85 excluded).
+The circuit is overlayed on top of the checks measured and the device connectivity. Qubit color conventions match those of
+Fig. 10, and we indicate defective couplers with red wavy lines. We show the full checks from Fig. 10(c) in layer 1. In layers
+2-14, the blue and light-red checks (shown) are measured (layers 13 and 14 are “undoing” the Bell pair measurement; see
+Sec. IV C 3). Layers 15-25 are measuring the blue and dark-red checks (shown).
+For this target Bell state,
+FBell = 1
+4
+ 
+1 +⟨mX ¯X1 ¯X2⟩+⟨ ¯Z1 ¯Z2⟩−⟨m X ¯YL ¯YL⟩
+
+.
+A logicalYmeasurement is not available fault-tolerantly
+in this setup [102]. Suppose the logical state is a mixed
+state written in the Bell basis,ρ L. Writingp P as the
+probability associated with Bell basis state (I⊗P)|Φ mX⟩
+inρL, it can be shown that⟨ ¯X1 ¯X2⟩=m X(1−2(pY +pZ)),
+⟨ ¯Z1 ¯Z2⟩= 1−2(p X +p Y ),⟨ ¯Y1 ¯Y2⟩=m X(−1 + 2(pX +
+pZ)) and thereforeF Bell = 1−p X−pY−pZ. We then
+obtain the following quantity from the measured logical
+
+18
+expectation values:
+Flower =⟨mX ¯X1 ¯X2⟩+⟨ ¯Z1 ¯Z2⟩
+2 =F Bell−pY.
+The residual gap is the logical-Yerror probabil-
+ity. From our above expressions for⟨ ¯X1 ¯X2⟩and
+⟨ ¯Z1 ¯Z2⟩we can boundp Y by 0≤p Y ≤ 1
+2(1−
+max{⟨mX ¯XL ¯XL⟩,⟨ ¯ZL ¯ZL⟩}) (the upper bound is ob-
+tained fromp Y ≤p Y +p X = 1
+2[1−⟨ ¯Z1 ¯Z2⟩] and a
+similar expression involvingp Z). Hence, the measured
+Bell fidelity is rigorously bounded byF lower≤F Bell =
+Flower +pY ≤ 1
+2(1 + min{⟨mX ¯X1 ¯X2⟩,⟨ ¯Z1 ¯Z2⟩).
+F. Pre-selection filters
+Here we describe the various filters applied when per-
+forming pre-selection in lattice surgery experiments.
+1. Initial leakage filtering
+Leakage out of the computational subspace can limit
+the fidelities of QEC protocols by generating errors that
+are correlated over extended regions of space or across
+syndrome cycles. One way to sense for leakage is to check
+whether aπpulse correctly flips the state of a qubit.
+To improve the sensitivity of the protocol, we had ac-
+cess to an adiabatic, narrow-bandXgate, called the
+Xslow gate [78]. Unlike a typicalXgate, which takes
+32ns and has a spectral width of tens of MHz, theX slow
+gate takes∼1µs and has a sub-MHz spectral width.
+The pre-check circuit then appliesX slow-X-M pre on each
+qubit. We wish to retain shots for which the measure-
+mentM pre returns 0, and we wish to discard shots in any
+other condition, such as the presence of leakage, which
+results in measuring 1.
+We note that measurement errors can also cause a
+qubit to fail this check. Therefore, we apply three re-
+peated measurements in place of a singleM pre. The filter
+is applied if at least two of the measurements return 1.
+In the Bell fidelity experiment, these pre-leakage filters
+removed approximately 50% of the runs. Further details
+are reported in Fig. 19.
+2. Filtering on projection to the code-state
+We also pre-select on successful code-state preparation.
+Here we require that the initial detectors (bothZand
+X) return trivial outcomes. Operationally, this removes
+shots with detected faults during the initial preparation
+and first syndrome-extraction rounds, before the lattice-
+surgery merge. In principle such a mechanism could be
+part of a prepare until succeed loop, carried out before
+the rest of the circuit is executed [16]. Alternatively, this
+procedure can be interpreted as an attempt to probe the
+logical failures resulting from lattice surgery, rather than
+poor initial state preparation.
+For the teleportation protocol, three different pre-
+filters were used: trivial syndrome in initial stabilizers
+in the prepared basis on the source logical qubit, trivial
+syndrome in initial stabilizers on the sourceandtarget
+logical qubits, and trivial syndrome in the full set of ini-
+tial detectors (that is, after the first two rounds of syn-
+drome extraction, before lattice surgery is performed) on
+both logical qubits.
+Details of the yields in each experiment resulting from
+these pre-filters can be found in Appendix C.
+ACKNOWLEDGMENTS
+We are grateful for conversations with E. Pritchett, S.
+Singh and M. Takita. BJB is grateful for the hospitality
+of the Niels Bohr Institute at the University of Copen-
+hagen. We acknowledge support from the Intelligence
+Advanced Research Projects Activity (IARPA), under
+the Entangled Logical Qubits program through Coop-
+erative Agreement Number W911NF-23-2-0223 (R.H.,
+B.J.B., and S.D.B.). The views and conclusions con-
+tained in this document are those of the authors and
+should not be interpreted as representing the official
+policies, either expressed or implied, of IARPA, the
+Army Research Office, or the U.S. Government. The
+U.S. Government is authorized to reproduce and dis-
+tribute reprints for Government purposes notwithstand-
+ing any copyright notation herein. S.H.L was supported
+by the National Research Foundation of Korea (NRF)
+grant (RS-2026-25612364, RS-2026-25476454, RS-2024-
+00442710, RS-2023-NR068116) funded by the Ministry
+of Science and ICT (MSIT) of the Korean government.
+Appendix A: Further Memory Data
+Best memory run— Here, we present further data
+for memory experiments performed onibm boston. In
+Fig. 13, we display results collected on 2026/05/01, a
+day which demonstrated the best performance for the
+7×7 code with both defects excluded. We find 4.4%
+and 2.9% logical errors per round forZandXmemory,
+respectively. The results were collected over 4096 shots.
+We did not perform separate experiments to extract an
+ACES noise model, and hence the presented results are
+decoded with an ACES noise model constructed on a
+previous day of device usage. From that old noise model,
+we perform averages over the layers in which each gate
+appears to construct a layer-averaged noise model we use
+for decoding. We do this to attempt to avoid overfitting
+the noise model to the previous day’s device snapshot.
+We present the results for all four prepared basis states:
+|0⟩,|1⟩,|+⟩and|−⟩.
+Best defect exclusion run— In Fig. 14, we provide
+further data used to generate Fig. 3. We plot the logi-
+
+19
+0.00
+0.01
+0.02
+0.03
+0.04
+0.05
+0.06
+0.07Logical error per round
+0.051 0.050
+0.042 0.044
+0.053
+0.048
+0.044 0.044
+Z memory
+|0>
+|1>
+None q46 out q85 out Both
+0.00
+0.01
+0.02
+0.03
+0.04
+0.05
+0.06
+0.07Logical error per round
+0.036 0.034 0.033
+0.029
+0.037 0.035 0.033
+0.029
+X memory
+|+>
+|->
+FIG. 13. Comparison of defect exclusion strategies with data
+collected on 2026/05/01. We use a layer-averaged ACES noise
+model with ACES information obtained from a previous day’s
+run, and a BeliefMatching decoder. The data show that the
+two basis states within a memory experiment differ very little.
+cal error per round across four different defect exclusion
+circuits (excluding qubit 46, qubit 85, both or neither),
+and three different decoder+noise model combinations,
+as explained in Section II B.
+Dummy defect exclusion— We run control experi-
+ments in which we exclude non-defective components
+(around qubit 89) from the code in the same way as we
+exclude defects. We observe that the performance of this
+“dummy” defect code is worse than the code with no
+qubit exclusion. This indicates that the improvements
+observed from defect exclusion are due to targeting noisy
+components of the lattice and not an artifact of moving
+to a lower-distance code in a device that is not operating
+below the code’s threshold. We present the results from
+the dummy defect code in Fig. 15.
+Comparing leakage post-selection cutoffs— In Fig. 16,
+we demonstrate that we observe significant gains from
+performing leakage post-selection with a cutoff proba-
+bility of 0.9, but observe little or no further gains from
+decreasing that cutoff to 0.7. Meanwhile, the per-round
+abort probability continues to increase between cutoff 0.9
+and 0.7.
+3×3,5×5, and7×7comparisons— Here we com-
+pare the memory performance of three different code
+0.00
+0.02
+0.04
+0.06
+0.08
+0.10
+0.12
+Logical error per round
+Z memory
+Defect(s) removed
+None
+q46 out
+q85 out
+q46 + q85 out
+Simple noise
+PyMatching
+Reported Noise
+BeliefMatching
+ACES noise
+BeliefMatching
+0.00
+0.02
+0.04
+0.06
+0.08
+0.10
+0.12
+Logical error per round
+X memory
+FIG. 14. Further data comparing defect exclusion memory ex-
+periments and choices of decoder and noise model, collected
+on 2026/05/02. The decoders, noise models and defect exclu-
+sion circuit choices are explained in Section II B.
+sizes (both with and without defect mitigation). We pro-
+vide the medians, means, and cumulative distributions of
+twenty-five 3×3 and nine 5×5 codes (within the foot-
+print of the 7×7 code) in Fig. 17. Note that data was
+collected on a different day to Fig. 4 of the main text.
+Appendix B: Further stability data
+In Fig. 18, we provide more data collected in our sta-
+bility experiments. We compare decoders informed by
+both ACES noise and reported noise models. For each
+of these, we compare hard and soft decoding, with and
+without leakage post-selection (with a cutoff probability
+of 0.7) and defect mitigation.
+Appendix C: Further Bell fidelity and logical
+teleportation data
+In Fig. 19, we show the detailed results from pre- and
+post-selection filters for the 3×3 lattice surgery experi-
+ments. We report results from two experiment locations:
+one with the top-left anchored at qubit 28 (shown in
+
+20
+0.00
+0.01
+0.02
+0.03
+0.04
+0.05
+0.06
+0.07Logical error per round
+0.054
+0.066
+0.053
+0.068
+Z memory
+|0>
+|1>
+None q89 out
+0.00
+0.01
+0.02
+0.03
+0.04
+0.05
+0.06
+0.07Logical error per round
+0.038
+0.042
+0.038
+0.043
+X memory
+|+>
+|->
+FIG. 15. We compare the performance of the 7×7 code
+with one with a “dummy” defect excluded (qubit 89). We
+use a layer-averaged ACES noise model and a BeliefMatching
+decoder. Data collected on 2026/06/01.
+Fig. 8), and another shifted down a row, with the top-
+left anchored at qubit 47. We note that pre-selecting
+on a clean preparation of the code state seemed to sub-
+sume the benefit from leakage pre-selection. For Bell
+fidelity experiments on 3×3 codes, only approximately
+14% of the runs had trivial syndromes up to the first full
+set of detectors. Combining this filter with leakage pre-
+selection reduced this yield to 13% with only a very mild
+additional improvement in the Bell fidelity (see Fig. 19).
+We also report results from logical state teleportation
+experiments in Fig. 20. Here we use lattice surgery (im-
+plementing an ¯X1 ¯X2 measurement) between two logical
+qubits to teleport logical information from one logical
+qubit (source) to the other (destination). For these ex-
+periments we only used the 3×3 patches with allZchecks
+measured every round (regular heavy-hex code).
+We implement logical teleportation in the following
+way:
+•We prepare the source in one of the four cardi-
+nal states{|0⟩L,|1⟩L,|+⟩L,|−⟩L}, and prepare the
+destination in the|0⟩ L state.
+•The source is then coupled to the destination only
+through lattice surgery: the patches are expanded
+into a joint code region and stabilizers across the
+seam region are measured for five lattice surgery
+rounds.
+•At the end of the surgery block we perform one
+further round of regular syndrome extraction on
+each logical qubit (with the two code patches now
+split).
+•The data qubits belonging to the original source
+region are destructively measured in theZbasis.
+•Finally the destination logical qubit is measured in
+the same basis in which the source was prepared.
+Performing lattice surgery for five rounds maintains
+the effective distance of the operation in the absence of
+mid-circuit reset. See Fig. 20(b) for a diagram showing
+the entire procedure.
+A shot is counted as successful when the decoded des-
+tination logical observable agrees with the logical state
+initially prepared on the source. We repeat this proce-
+dure independently for the four input states and report
+the corresponding logical teleportation success probabil-
+ities.
+We now comment on the pre- and post-selection filters
+and their yields for the logical teleportation protocol. In
+this experiment, we found that it was less important to
+pre-filter up to the first full set of detectors. Rather,
+the initial stabilizer readouts (in the same basis of state
+preparation) could be used for pre-filtering, with minimal
+further gain in fidelity found from pre-filtering further on
+a full set of stabilizers. Details of yields and the impact
+on fidelity of the three different pre-selection filters used
+for teleportation can be found in Fig. 20(c) (see also Sec-
+tion IV F). One reason that the teleportation protocol is
+less sensitive to pre-selecting out errors in the opposite
+basis to Bell state preparation, is that the destination
+logical qubit is only ever read out in that basis. Con-
+trast this with the Bell fidelity protocol where the logical
+qubits can be read out in the complimentary basis.
+For logical gap post-selection in teleportation experi-
+ments, PyMatching did not perform as well as correlated
+PyMatching in assessing the probability of corrections
+being accurate, so in this case we used correlated Py-
+Matching [103] to calculate a logical gap. Shots that
+were accepted were then decoded also using correlated
+matching. In addition we found pre-selecting on cor-
+rectly preparing the initial state was less important to
+achieve high fidelity teleportation. Figure 20(a) shows
+the result of applying the logical gap post-selection with-
+out any other filters, and (c) shows the results of applying
+the filters together with logical gap post-selection.
+In Figure 20(c), we report the total yields from both
+pre-selection and post-selection. The yields from just
+post-selection can be calculated by comparing to the cor-
+responding yields at logical-gap threshold 0. The aver-
+age post-selection yields at threshold 4, for example, are:
+
+21
+None q46 out q85 out q46 + q85 out
+0.00
+0.01
+0.02
+0.03
+0.04
+0.05
+0.06
+Logical error per round
+Z memory
+7.0%
+abort/rd
+6.8%
+abort/rd
+5.4%
+abort/rd
+5.3%
+abort/rd
+9.5%
+abort/rd
+9.0%
+abort/rd
+7.0%
+abort/rd
+6.8%
+abort/rd
+None q46 out q85 out q46 + q85 out
+X memory
+PS cutoff
+1
+0.9
+0.7
+7.0%
+abort/rd
+7.1%
+abort/rd
+5.5%
+abort/rd
+5.4%
+abort/rd
+9.4%
+abort/rd
+9.5%
+abort/rd
+7.2%
+abort/rd
+7.0%
+abort/rd
+FIG. 16. Leakage post-selection on patches with/without defect mitigation and in all bases. Data was taken on 2026/06/01.
+10−2 10−1
+Logical error per round
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Cumulative fraction of patches below x
+Z memory
+3 × 3, Median: 0.0253
+5 × 5, Median: 0.0358
+7 × 7: 0.0537
+7 × 7; defects removed:
+0.0466
+10−2 10−1
+Logical error per round
+X memory
+3 × 3, Median: 0.0150
+5 × 5, Median: 0.0302
+7 × 7: 0.0372
+7 × 7; defects removed:
+0.0324
+Z memory X memory
+0.00
+0.02
+0.04
+0.06
+0.08
+0.10
+Logical error per round (mean over patches)
+0.033
+0.020
+0.046
+0.032
+0.054
+0.037
+0.047
+0.032
+3 × 3
+5 × 5
+7 × 7
+7 × 7;
+defects removed
+(a) (b)
+FIG. 17. Comparison of dynamic compass code patches of side lengths 3, 5 and 7. The 7×7 patch is compared both with and
+without defect exclusion. We report cumulative distributions of 3×3 and 5×5 patches in (a), and indicate the median patch
+performance with purple/orange circles. In (b), we plot mean patch performance (shaded regions indicate standard errors of
+the mean). Data was collected on 2026/06/01.
+1 5 10 15 20 25 30 35
+Syndrome extraction rounds
+0.1
+0.2
+0.3
+0.4
+0.5Failure probability
+Failure probability versus rounds; ACES noise
+Leakage posterior cutoff = 0.7
+1 5 10 15 20 25 30 35
+Syndrome extraction rounds
+Failure probability versus rounds; Reported Noise
+Leakage posterior cutoff = 0.7
+Hard Soft Hard + PS Soft + PS No defect mitigation q85 out
+FIG. 18. Further stability data. We compare decoders informed by ACES or reported noise, and hard or soft information. For
+each of these we decode the stability patch data with and without defect mitigation (qubit 85 excluded). We finally perform
+leakage post-selection (PS) on all sets of data with a cutoff probability of 0.7. Data collected on 2026/06/01.
+
+22
+0 1 2 3 4 5 6 7 8 9
+PyMatching logical-gap threshold
+No pre-selection
+Clean state
+Leakage pre-selection
+State and leakage
+0.586
+100.0%
+0.586
+99.9%
+0.588
+99.3%
+0.595
+96.9%
+0.610
+90.2%
+0.634
+77.5%
+0.672
+60.9%
+0.724
+44.3%
+0.789
+31.0%
+0.867
+21.9%
+0.765
+14.1%
+0.766
+14.1%
+0.770
+14.0%
+0.784
+13.5%
+0.807
+12.2%
+0.842
+10.2%
+0.882
+8.1%
+0.922
+6.2%
+0.954
+4.8%
+0.973
+3.8%
+0.680
+52.1%
+0.681
+52.0%
+0.683
+51.6%
+0.692
+50.3%
+0.709
+46.5%
+0.736
+39.6%
+0.775
+31.3%
+0.825
+23.2%
+0.880
+16.9%
+0.933
+12.6%
+0.773
+13.3%
+0.774
+13.2%
+0.779
+13.1%
+0.792
+12.6%
+0.816
+11.4%
+0.850
+9.6%
+0.889
+7.6%
+0.926
+5.9%
+0.958
+4.6%
+0.976
+3.6%
+3 £ 3 Lattice surgery, Start location: 28
+<85%
+85-90%
+90-95%
+95%+
+0 1 2 3 4 5 6 7 8 9
+PyMatching logical-gap threshold
+No pre-selection
+Clean state
+Leakage pre-selection
+State and leakage
+0.582
+100.0%
+0.583
+99.8%
+0.585
+99.0%
+0.590
+96.3%
+0.601
+89.2%
+0.621
+76.3%
+0.653
+59.6%
+0.696
+43.2%
+0.760
+30.2%
+0.842
+21.3%
+0.759
+12.4%
+0.760
+12.3%
+0.765
+12.2%
+0.775
+11.7%
+0.795
+10.5%
+0.823
+8.7%
+0.862
+6.8%
+0.905
+5.2%
+0.943
+3.9%
+0.970
+3.1%
+0.668
+52.9%
+0.669
+52.8%
+0.671
+52.3%
+0.678
+50.7%
+0.691
+46.6%
+0.714
+39.5%
+0.748
+30.9%
+0.791
+22.8%
+0.852
+16.5%
+0.915
+12.1%
+0.764
+11.6%
+0.765
+11.5%
+0.769
+11.4%
+0.780
+10.9%
+0.800
+9.8%
+0.828
+8.2%
+0.867
+6.4%
+0.909
+4.8%
+0.947
+3.7%
+0.973
+2.9%
+3 £ 3 Lattice surgery, Start location: 47
+<85%
+85-90%
+90-95%
+95%+
+FIG. 19. Illustration of the impact of various pre-filters on the lower bound of the logical Bell Fidelity for two locations on the
+device (top-left qubit at location 28 or 47). The pre-filters are explained in Section IV F and include: applying no pre-selection
+filters, filtering on a clean preparation of the code space with no violated detectors (“clean state”), leakage pre-selection, and
+the combination of leakage and clean state pre-selection (“state and leakage”). As can be seen, most of the benefit comes from
+clean state pre-selection. Data was collected on 2026/07/17.
+32.2% (no pre-filter), 35.6% (source initial syndrome),
+37.7% (source and destination initial syndrome), and
+45.9% (both initial syndromes, plus trivial initial detec-
+tors).
+[1] R. Acharya, D. A. Abanin, L. Aghababaie-Beni,
+I. Aleiner, T. I. Andersen, M. Ansmann, F. Arute,
+K. Arya, A. Asfaw, N. Astrakhantsev, J. Atalaya,
+R. Babbush, D. Bacon, B. Ballard, J. C. Bardin,
+J. Bausch, A. Bengtsson, A. Bilmes, S. Blackwell,
+S. Boixo, G. Bortoli, A. Bourassa, J. Bovaird, L. Brill,
+M. Broughton, D. A. Browne, B. Buchea, B. B. Buck-
+ley, D. A. Buell, T. Burger, B. Burkett, N. Bush-
+nell, A. Cabrera, J. Campero, H.-S. Chang, Y. Chen,
+Z. Chen, B. Chiaro, D. Chik, C. Chou, J. Claes, A. Y.
+Cleland, J. Cogan, R. Collins, P. Conner, W. Court-
+ney, A. L. Crook, B. Curtin, S. Das, A. Davies,
+L. De Lorenzo, D. M. Debroy, S. Demura, M. Devoret,
+A. Di Paolo, P. Donohoe, I. Drozdov, A. Dunsworth,
+C. Earle, T. Edlich, A. Eickbusch, A. M. Elbag, M. El-
+zouka, C. Erickson, L. Faoro, E. Farhi, V. S. Ferreira,
+L. F. Burgos, E. Forati, A. G. Fowler, B. Foxen, S. Gan-
+jam, G. Garcia, R. Gasca, ´E. Genois, W. Giang, C. Gid-
+ney, D. Gilboa, R. Gosula, A. G. Dau, D. Graumann,
+A. Greene, J. A. Gross, S. Habegger, J. Hall, M. C.
+Hamilton, M. Hansen, M. P. Harrigan, S. D. Harring-
+ton, F. J. H. Heras, S. Heslin, P. Heu, O. Higgott,
+G. Hill, J. Hilton, G. Holland, S. Hong, H.-Y. Huang,
+A. Huff, W. J. Huggins, L. B. Ioffe, S. V. Isakov,
+J. Iveland, E. Jeffrey, Z. Jiang, C. Jones, S. Jordan,
+C. Joshi, P. Juhas, D. Kafri, H. Kang, A. H. Karam-
+lou, K. Kechedzhi, J. Kelly, T. Khaire, T. Khattar,
+M. Khezri, S. Kim, P. V. Klimov, A. R. Klots, B. Ko-
+brin, P. Kohli, A. N. Korotkov, F. Kostritsa, R. Kothari,
+B. Kozlovskii, J. M. Kreikebaum, V. D. Kurilovich,
+N. Lacroix, D. Landhuis, T. Lange-Dei, B. W. Langley,
+P. Laptev, K.-M. Lau, L. Le Guevel, J. Ledford, J. Lee,
+
+23
+0 0.5 1 1.5 2 2.5 3 3.5 4
+Correlated PyMatching logical-gap threshold
+75
+80
+85
+90
+95
+100Success rate %
+T eleportation protocol, Correlated PyMatching
+| +
+|
+|0
+|1
+0
+20
+40
+60
+80
+100
+Yield (%)
+logical qubits interact through lattice surgery
+0 0.5 1 1.5 2 2.5 3 3.5 4
+Correlated PyMatching logical-gap threshold
+No prefilter
+Source LQ,
+initial syndrome
+Source + Dest. LQ,
+initial syndrome
+Source + Dest. LQ,
+trivial initial detectors
+88.8
+(69.9)
+88.1
+(68.6)
+79.3
+(69.2)
+79.1
+(68.1)
+90.7
+(66.2)
+90.0
+(64.5)
+82.1
+(62.5)
+81.8
+(61.4)
+92.1
+(63.1)
+91.6
+(61.3)
+84.6
+(54.5)
+84.3
+(53.5)
+93.4
+(60.2)
+92.9
+(58.5)
+87.6
+(46.9)
+87.3
+(46.0)
+94.4
+(57.5)
+94.0
+(55.6)
+90.3
+(39.7)
+90.1
+(38.8)
+95.6
+(54.5)
+95.1
+(52.6)
+92.3
+(31.6)
+92.2
+(30.7)
+96.7
+(49.0)
+96.1
+(47.0)
+94.1
+(24.4)
+94.1
+(23.6)
+97.4
+(40.9)
+97.0
+(38.7)
+95.7
+(18.3)
+95.6
+(17.8)
+98.0
+(38.3)
+97.6
+(36.0)
+97.0
+(15.1)
+97.0
+(14.7)
+92.6
+(33.8)
+92.3
+(32.0)
+83.5
+(31.8)
+83.3
+(31.2)
+94.0
+(32.5)
+93.8
+(30.6)
+85.9
+(29.4)
+85.5
+(28.8)
+95.0
+(31.5)
+94.8
+(29.7)
+88.0
+(26.2)
+87.6
+(25.8)
+95.8
+(30.5)
+95.6
+(28.7)
+90.5
+(23.2)
+90.1
+(22.7)
+96.4
+(29.5)
+96.3
+(27.8)
+92.6
+(20.1)
+92.2
+(19.6)
+97.2
+(28.4)
+97.1
+(26.7)
+94.1
+(16.8)
+93.9
+(16.2)
+97.9
+(26.2)
+97.8
+(24.6)
+95.7
+(13.5)
+95.5
+(13.0)
+98.4
+(22.5)
+98.3
+(21.2)
+97.1
+(10.6)
+96.8
+(10.3)
+98.8
+(21.5)
+98.6
+(20.2)
+97.8
+(9.1)
+97.8
+(8.8)
+84.8
+(100.0)
+84.2
+(100.0)
+74.6
+(100.0)
+74.8
+(100.0)
+87.1
+(93.2)
+86.3
+(92.7)
+77.8
+(87.7)
+77.7
+(87.8)
+88.9
+(87.4)
+88.2
+(86.8)
+80.8
+(74.5)
+80.8
+(74.6)
+90.6
+(82.1)
+90.0
+(81.4)
+84.4
+(62.4)
+84.3
+(62.3)
+92.0
+(77.2)
+91.5
+(76.1)
+87.5
+(51.3)
+87.5
+(51.0)
+93.4
+(71.9)
+92.9
+(70.7)
+90.1
+(39.6)
+89.8
+(39.3)
+95.0
+(63.4)
+94.4
+(61.4)
+92.3
+(29.7)
+92.2
+(29.4)
+96.2
+(52.2)
+95.6
+(50.0)
+94.2
+(21.8)
+94.1
+(21.7)
+97.0
+(48.1)
+96.5
+(45.9)
+96.0
+(17.4)
+96.0
+(17.2)
+87.2
+(81.8)
+86.5
+(80.2)
+77.3
+(80.9)
+77.3
+(79.6)
+89.2
+(77.0)
+88.5
+(75.0)
+80.2
+(72.2)
+80.1
+(71.1)
+90.8
+(73.0)
+90.2
+(70.9)
+83.0
+(62.2)
+82.9
+(61.3)
+92.2
+(69.2)
+91.7
+(67.2)
+86.2
+(53.0)
+86.2
+(52.1)
+93.4
+(65.7)
+93.0
+(63.5)
+89.1
+(44.4)
+89.1
+(43.3)
+94.7
+(61.9)
+94.2
+(59.8)
+91.4
+(34.9)
+91.2
+(34.0)
+95.9
+(55.3)
+95.4
+(53.0)
+93.4
+(26.6)
+93.3
+(25.9)
+96.8
+(46.0)
+96.4
+(43.4)
+95.1
+(19.8)
+94.9
+(19.3)
+97.5
+(42.8)
+97.1
+(40.3)
+96.6
+(16.1)
+96.6
+(15.8)
+cell key
+| + ⟩ |0⟩
+| − ⟩ |1⟩
+<85%
+85-90%
+90-95%
+95%+
+Success rate
+(a) (b)
+(c)
+FIG. 20. Teleportation protocols success rates. Data was collected on 2026/07/22. (a) shows the success rate of teleporting
+various cardinal states. No pre-filter was applied. Correlated PyMatching was used to assess the logical gap and perform the
+decoding. The line plot indicates the yield at each threshold. (b) Cartoon pipe diagram showing the teleportation protocol. (c)
+Heat map of the teleportation success with various pre-filters applied (total yield in brackets), for each of the cardinal states.
+Each pre-filter, averaged over the four states, had the following yields: source logical qubit (LQ) initial syndrome 80.6%; all
+qubits initial syndrome 68.9%; all qubits initial syndrome plus the first full set of detectors 32.2%.
+K. Lee, Y. D. Lensky, S. Leon, B. J. Lester, W. Y. Li,
+Y. Li, A. T. Lill, W. Liu, W. P. Livingston, A. Locharla,
+E. Lucero, D. Lundahl, A. Lunt, S. Madhuk, F. D.
+Malone, A. Maloney, S. Mandr` a, J. Manyika, L. S.
+Martin, O. Martin, S. Martin, C. Maxfield, J. R. Mc-
+Clean, M. McEwen, S. Meeks, A. Megrant, X. Mi, K. C.
+Miao, A. Mieszala, R. Molavi, S. Molina, S. Montazeri,
+A. Morvan, R. Movassagh, W. Mruczkiewicz, O. Naa-
+man, M. Neeley, C. Neill, A. Nersisyan, H. Neven,
+M. Newman, J. H. Ng, A. Nguyen, M. Nguyen, C.-H. Ni,
+M. Y. Niu, T. E. O’Brien, W. D. Oliver, A. Opremcak,
+K. Ottosson, A. Petukhov, A. Pizzuto, J. Platt, R. Pot-
+ter, O. Pritchard, L. P. Pryadko, C. Quintana, G. Ra-
+machandran, M. J. Reagor, J. Redding, D. M. Rhodes,
+G. Roberts, E. Rosenberg, E. Rosenfeld, P. Roushan,
+N. C. Rubin, N. Saei, D. Sank, K. Sankaragomathi,
+K. J. Satzinger, H. F. Schurkus, C. Schuster, A. W.
+Senior, M. J. Shearn, A. Shorter, N. Shutty, V. Shvarts,
+S. Singh, V. Sivak, J. Skruzny, S. Small, V. Smelyanskiy,
+W. C. Smith, R. D. Somma, S. Springer, G. Sterling,
+D. Strain, J. Suchard, A. Szasz, A. Sztein, D. Thor,
+A. Torres, M. M. Torunbalci, A. Vaishnav, J. Vargas,
+S. Vdovichev, G. Vidal, B. Villalonga, C. V. Heidweiller,
+S. Waltman, S. X. Wang, B. Ware, K. Weber, T. Weidel,
+T. White, K. Wong, B. W. K. Woo, C. Xing, Z. J. Yao,
+P. Yeh, B. Ying, J. Yoo, N. Yosri, G. Young, A. Zal-
+cman, Y. Zhang, N. Zhu, and N. Zobrist, Quantum er-
+ror correction below the surface code threshold, Nature
+638, 920 (2024).
+[2] J. Van Damme, S. Massar, R. Acharya, T. Ivanov,
+D. Perez Lozano, Y. Canvel, M. Demarets, D. Van-
+goidsenhoven, Y. Hermans, J. G. Lai, A. M. Vadiraj,
+M. Mongillo, D. Wan, J. De Boeck, A. Potoˇ cnik, and
+K. De Greve, Advanced CMOS manufacturing of su-
+perconducting qubits on 300 mm wafers, Nature634,
+74 (2024).
+[3] S. J. K. Lang, I. Eisele, J. Weber, A. Schewski, E. Mu-
+sic, A. Maiwald, M. Heigl, D. Zahn, Z. Luo, L. Nebrich,
+B. Schoof, T. Mayer, L. Sturm-Rogon, W. Lerch, R. N.
+Pereira, and C. Kutter, Wafer-scale characterization of
+al/alxoy/al josephson junctions at room temperature
+(2025), arXiv:2504.16686 [quant-ph].
+
+24
+[4] S. Lang, T. Mayer, J. Weber, C. Dhieb, I. Eisele,
+W. Lerch, Z. Luo, C. M. Guiz´ an, E. Music, L. Sturm-
+Rogon, D. Zahn, R. Pereira, and C. Kutter, Cmos-
+compatible processing and room-temperature character-
+ization at the wafer level for scalable quantum comput-
+ing, Phys. Rev. Appl.24, 054052 (2025).
+[5] M. P. Bland, F. Bahrami, J. G. C. Martinez, P. H.
+Prestegaard, B. M. Smitham, A. Joshi, E. Hedrick,
+S. Kumar, A. Yang, A. C. Pakpour-Tabrizi, A. Jin-
+dal, R. D. Chang, G. Cheng, N. Yao, R. J. Cava, N. P.
+de Leon, and A. A. Houck, Millisecond lifetimes and co-
+herence times in 2D transmon qubits, Nature647, 343
+(2025).
+[6] M. Tuokkola, Y. Sunada, H. Kivij¨ arvi, J. Albanese,
+L. Gr¨ onberg, J.-P. Kaikkonen, V. Vesterinen, J. Gove-
+nius, and M. M¨ ott¨ onen, Methods to achieve near-
+millisecond energy relaxation and dephasing times for
+a superconducting transmon qubit, Nature Communi-
+cations16, 5421 (2025).
+[7] Y.-Y. Jiang, C. Deng, H. Fan, B.-Y. Li, L. Sun, X.-S.
+Tan, W. Wang, G.-M. Xue, F. Yan, H.-F. Yu, Y.-S.
+Zhang, Y.-R. Zhang, and C.-L. Zou, Advancements in
+superconducting quantum computing, National Science
+Review12, nwaf246 (2025).
+[8] F. Marxer, J. Mro˙ zek, J. Andersson, L. Abdurakhi-
+mov, J. Adam, V. Bergholm, R. Beriwal, C. F.
+Chan, S. Dahl, S. R. Das, F. Deppe, O. Fedorets,
+Z. Gao, A. Gomez Frieiro, D. Gusenkova, A. Guthrie,
+T. Hiltunen, H. Hsu, E. Hyypp¨ a, J. Ikonen, S. Inel,
+S. W. Jolin, A. Karis, S.-G. Kim, W. Kindel, A. Kom-
+lev, M. Koistinen, R. Kokkoniemi, S. Kumar, H.-S.
+Ku, J. Lamprich, S. Laine, A. Landra, L.-H. Lee,
+N. Lethif, P. Liebermann, W. Liu, K. Mitra, T. Myll¨ ari,
+C. Ockeloen-Korppi, T. Orell, A. Plyshch, J. R¨ abin¨ a,
+A. Rebello, M. Renger, O. Reentil¨ a, J. Ritvas, S. Saari-
+nen, O. Salmenkivi, M. Sarsby, M. Savytskyi, V. Selin-
+maa, M. Steggles, E. Takala, I. Takmakov, B. Tarasin-
+ski, J. Tuorila, A. V¨ alimaa, J. Verjauw, J. Wesdorp,
+N. Wurz, W. Qiu, L. Zhu, J. Hassel, J. Heinsoo,
+A. Geresdi, and A. Veps¨ al¨ ainen, Above 99.9% fidelity
+single-qubit gates, two-qubit gates, and readout in a sin-
+gle superconducting quantum device, PRX Quantum7,
+020333 (2026).
+[9] T. He, W. Lin, R. Wang, Y. Li, J. Bei, J. Cai, S. Cao,
+D. Chen, K. Chen, X. Chen, Z. Chen, Z. Chen, Z. Chen,
+W. Chu, H. Deng, X. Ding, Z. Ding, B. Fan, D. Fan,
+Y. Fu, D. Gao, M. Gong, J. Gui, C. Guo, S. Guo,
+L. Han, L. Hong, Y. Hu, H.-L. Huang, Y.-H. Huo,
+C. Jiang, L. Jiang, T. Jiang, Z. Jiang, H. Jin, D. Li,
+D. Li, J. Li, J. Li, J. Li, J. Li, N. Li, S. Li, Y. Li,
+F. Liang, N. Liao, J. Lin, K. Liu, M. Liu, Y. Liu,
+H. Lou, Y. Ma, K. Nan, M. Nie, L. Niu, W. Peng,
+H. Qian, H. Rong, T. Rong, H. Shen, Q. Shen, H. Su,
+F. Su, C. Sun, L. Sun, T. Sun, Y. Sun, Y. Tan, J. Tan,
+W. Tu, J. Wang, B. Wang, C. Wang, C. Wang, C. Wang,
+J. Wang, S. Wang, X. Wang, Z. Wei, D. Wu, G. Wu,
+Y. Wu, Y. Xu, C. Xue, K. Yan, X. Yan, W. Yang,
+X. Yang, Y. Yang, Y. Ye, Z. Ye, Z. Yi, C. Ying, J. Yu,
+Q. Yu, X. Zeng, C. Zha, S. Zhan, H. Zhang, H. Zhang,
+K. Zhang, W. Zhang, Y. Zhang, Y. Zhang, Z. Zhang,
+G. Zhao, X. Zhao, Y. Zhao, Z. Zhao, L. Zheng, F. Zhou,
+L. Zhou, N. Zhou, N. Zhou, C. Zhu, Q. Zhu, G. Zou,
+H. Zou, Q. Zhang, C.-Y. Lu, C.-Z. Peng, F. Chen,
+X. Zhu, and J.-W. Pan, Experimental quantum error
+correction below the surface code threshold via all-
+microwave leakage suppression, Phys. Rev. Lett.135,
+260601 (2025).
+[10] M. McEwen, D. Kafri, J. Chen, J. Atalaya, K. Satzinger,
+C. Quintana, P. V. Klimov, D. Sank, C. M. Gidney,
+A. Fowler, F. C. Arute, K. Arya, B. B. Buckley, B. Bur-
+kett, N. Bushnell, B. Chiaro, R. Collins, S. Demura,
+A. Dunsworth, C. Erickson, B. R. Foxen, M. Giustina,
+T. Huang, S. Hong, E. Jeffrey, S. Kim, K. Kechedzhi,
+F. Kostritsa, P. Laptev, A. Megrant, X. Mi, J. Mu-
+tus, O. Naaman, M. Neeley, C. Neill, M. Y. Niu,
+A. Paler, N. Redd, P. Roushan, T. White, J. Yao,
+P. Yeh, A. J. Zalcman, Y. Chen, V. Smelyanskiy, J. Mar-
+tinis, H. Neven, J. Kelly, A. Korotkov, A. G. Petukhov,
+and R. Barends, Removing leakage-induced correlated
+errors in superconducting quantum error correction, Na-
+ture Communications12, 1761 (2021).
+[11] M. McEwen, D. Bacon, and C. Gidney, Relaxing hard-
+ware requirements for surface code circuits using time-
+dynamics (2023).
+[12] K. C. Miao, M. McEwen, J. Atalaya, D. Kafri, L. P.
+Pryadko, A. Bengtsson, A. Opremcak, K. J. Satzinger,
+Z. Chen, P. V. Klimov, C. Quintana, R. Acharya, K. An-
+derson, M. Ansmann, F. Arute, K. Arya, A. Asfaw,
+J. C. Bardin, A. Bourassa, J. Bovaird, L. Brill, B. B.
+Buckley, D. A. Buell, T. Burger, B. Burkett, N. Bush-
+nell, J. Campero, B. Chiaro, R. Collins, P. Conner,
+A. L. Crook, B. Curtin, D. M. Debroy, S. Demura,
+A. Dunsworth, C. Erickson, R. Fatemi, V. S. Ferreira,
+L. F. Burgos, E. Forati, A. G. Fowler, B. Foxen, G. Gar-
+cia, W. Giang, C. Gidney, M. Giustina, R. Gosula,
+A. G. Dau, J. A. Gross, M. C. Hamilton, S. D. Har-
+rington, P. Heu, J. Hilton, M. R. Hoffmann, S. Hong,
+T. Huang, A. Huff, J. Iveland, E. Jeffrey, Z. Jiang,
+C. Jones, J. Kelly, S. Kim, F. Kostritsa, J. M. Kreike-
+baum, D. Landhuis, P. Laptev, L. Laws, K. Lee, B. J.
+Lester, A. T. Lill, W. Liu, A. Locharla, E. Lucero,
+S. Martin, A. Megrant, X. Mi, S. Montazeri, A. Mor-
+van, O. Naaman, M. Neeley, C. Neill, A. Nersisyan,
+M. Newman, J. H. Ng, A. Nguyen, M. Nguyen, R. Pot-
+ter, C. Rocque, P. Roushan, K. Sankaragomathi, H. F.
+Schurkus, C. Schuster, M. J. Shearn, A. Shorter,
+N. Shutty, V. Shvarts, J. Skruzny, W. C. Smith, G. Ster-
+ling, M. Szalay, D. Thor, A. Torres, T. White, B. W. K.
+Woo, Z. J. Yao, P. Yeh, J. Yoo, G. Young, A. Zal-
+cman, N. Zhu, N. Zobrist, H. Neven, V. Smelyanskiy,
+A. Petukhov, A. N. Korotkov, D. Sank, and Y. Chen,
+Overcoming leakage in quantum error correction, Na-
+ture Physics19, 1780 (2023).
+[13] N. Lacroix, L. Hofele, A. Remm, O. Benhayoune-
+Khadraoui, A. McDonald, R. Shillito, S. Lazar,
+C. Hellings, F. m. c. Swiadek, D. Colao-Zanuz,
+A. Flasby, M. B. Panah, M. Kerschbaum, G. J. Norris,
+A. Blais, A. Wallraff, and S. Krinner, Fast flux-activated
+leakage reduction for superconducting quantum circuits,
+Phys. Rev. Lett.134, 120601 (2025).
+[14] E. Rosenfeld, C. Gidney, G. Roberts, A. Morvan,
+N. Lacroix, D. Kafri, J. Marshall, M. Li, V. Sivak,
+D. Abanin, A. Abbas, R. Acharya, L. A. Beni,
+G. Aigeldinger, R. Alcaraz, S. Alcaraz, T. I. Ander-
+sen, M. Ansmann, F. Arute, K. Arya, W. Askew,
+N. Astrakhantsev, J. Atalaya, R. Babbush, B. Bal-
+lard, J. C. Bardin, H. Bates, A. Bengtsson, M. B.
+Karimi, A. Bilmes, S. Bilodeau, F. Borjans, J. Bo-
+
+25
+vaird, D. Bowers, L. Brill, P. Brooks, M. Broughton,
+D. A. Browne, B. Buchea, B. B. Buckley, T. Burger,
+B. Burkett, N. Bushnell, J. Busnaina, A. Cabrera,
+J. Campero, H.-S. Chang, S. Chen, Z. Chen, B. Chiaro,
+L.-Y. Chih, A. Y. Cleland, B. Cochrane, M. Cock-
+rell, J. Cogan, P. Conner, H. Cook, R. G. Corti˜ nas,
+W. Courtney, A. L. Crook, B. Curtin, M. Damyanov,
+S. Das, D. M. Debroy, S. Demura, P. Donohoe, I. Droz-
+dov, A. Dunsworth, V. Ehimhen, A. Eickbusch, A. M.
+Elbag, L. Ella, M. Elzouka, D. Enriquez, C. Erick-
+son, L. Faoro, V. S. Ferreira, M. Flores, L. F. Bur-
+gos, S. Fontes, E. Forati, J. Ford, B. Foxen, M. Fukami,
+A. W. L. Fung, L. Fuste, S. Ganjam, G. Garcia, C. Gar-
+rick, R. Gasca, H. Gehring, R. Geiger, ´E. Genois,
+W. Giang, D. Gilboa, J. E. Goeders, E. C. Gonza-
+les, R. Gosula, S. J. de Graaf, A. G. Dau, D. Grau-
+mann, J. Grebel, A. Greene, J. A. Gross, J. Guer-
+rero, L. L. Guevel, T. Ha, S. Habegger, T. Hadick,
+A. Hadjikhani, M. C. Hamilton, M. Hansen, M. P. Har-
+rigan, S. D. Harrington, J. Hartshorn, S. Heslin, P. Heu,
+O. Higgott, R. Hiltermann, J. Hilton, H.-Y. Huang,
+M. Hucka, C. Hudspeth, A. Huff, W. J. Huggins, L. B.
+Ioffe, E. Jeffrey, S. Jevons, Z. Jiang, X. Jin, C. Joshi,
+P. Juhas, A. Kabel, H. Kang, K. Kang, A. H. Karam-
+lou, R. Kaufman, K. Kechedzhi, T. Khattar, M. Khezri,
+S. Kim, P. V. Klimov, C. M. Knaut, B. Kobrin, A. N.
+Korotkov, F. Kostritsa, J. M. Kreikebaum, R. Kudo,
+B. Kueffler, A. Kumar, V. D. Kurilovich, V. Kutsko,
+T. Lange-Dei, B. W. Langley, P. Laptev, K.-M. Lau,
+E. Leavell, J. Ledford, J. Lee, K. Lee, B. J. Lester,
+W. Leung, L. Li, W. Y. Li, A. T. Lill, W. P. Livingston,
+M. T. Lloyd, A. Locharla, L. D. Lorenzo, E. Lucero,
+D. Lundahl, A. Lunt, S. Madhuk, A. Maiti, A. Mal-
+oney, S. Mandr` a, L. S. Martin, O. Martin, E. Mascot,
+P. M. Das, D. Maslov, M. Mathews, C. Maxfield, J. R.
+McClean, M. McEwen, S. Meeks, A. Megrant, K. C.
+Miao, Z. K. Minev, R. Molavi, S. Molina, S. Mon-
+tazeri, C. Neill, M. Newman, A. Nguyen, M. Nguyen,
+C.-H. Ni, M. Y. Niu, N. Noll, L. Oas, W. D. Oliver,
+R. Orosco, K. Ottosson, A. Pagano, A. D. Paolo,
+S. Peek, D. Peterson, A. Pizzuto, E. Portoles, R. Potter,
+O. Pritchard, M. Qian, C. Quintana, G. Ramachandran,
+A. Ranadive, M. J. Reagor, R. Resnick, D. M. Rhodes,
+D. Riley, R. Rodriguez, E. Ropes, L. B. D. Rose,
+E. Rosenberg, D. Rosenstock, E. Rossi, P. Roushan,
+D. A. Rower, R. Salazar, K. Sankaragomathi, M. C.
+Sarihan, M. Schaefer, S. Schroeder, H. F. Schurkus,
+A. Shahingohar, M. J. Shearn, A. Shorter, N. Shutty,
+V. Shvarts, S. Small, W. C. Smith, D. A. Sobel,
+B. Spells, S. Springer, G. Sterling, J. Suchard, A. Szasz,
+A. Sztein, M. Taylor, J. P. Thiruraman, D. Thor,
+D. Timucin, E. Tomita, A. Torres, M. M. Torunbalci,
+H. Tran, A. Vaishnav, J. Vargas, S. Vdovichev, G. Vi-
+dal, B. Villalonga, C. V. Heidweiller, M. Voorhees,
+S. Waltman, J. Waltz, S. X. Wang, D. Wang, B. Ware,
+J. D. Watson, Y. Wei, T. Weidel, T. White, K. Wong,
+B. W. K. Woo, C. J. Wood, M. Woodson, C. Xing,
+Z. J. Yao, P. Yeh, B. Ying, J. Yoo, N. Yosri, E. Young,
+G. Young, A. Zalcman, R. Zhang, Y. Zhang, N. Zhu,
+N. Zobrist, Z. Zou, H. Neven, S. Boixo, C. Jones,
+J. Kelly, A. Bourassa, and K. J. Satzinger, Magic state
+cultivation on a superconducting quantum processor
+(2025), arXiv:2512.13908 [quant-ph].
+[15] Y. Ye, T. He, H.-L. Huang, Z. Wei, Y. Zhang, Y. Zhao,
+D. Wu, Q. Zhu, H. Guan, S. Cao, F. Chen, T.-H. Chung,
+H. Deng, D. Fan, M. Gong, C. Guo, S. Guo, L. Han,
+N. Li, S. Li, Y. Li, F. Liang, J. Lin, H. Qian, H. Rong,
+H. Su, S. Wang, Y. Wu, Y. Xu, C. Ying, J. Yu, C. Zha,
+K. Zhang, Y.-H. Huo, C.-Y. Lu, C.-Z. Peng, X. Zhu,
+and J.-W. Pan, Logical magic state preparation with
+fidelity beyond the distillation threshold on a super-
+conducting quantum processor, Phys. Rev. Lett.131,
+210603 (2023).
+[16] R. S. Gupta, N. Sundaresan, T. Alexander, C. J.
+Wood, S. T. Merkel, M. B. Healy, M. Hillenbrand,
+T. Jochym-O’Connor, J. R. Wootton, T. J. Yoder,
+A. W. Cross, M. Takita, and B. J. Brown, Encoding
+a magic state with beyond break-even fidelity, Nature
+625, 259 (2024).
+[17] Y. Wang, F. Shen, H. Xie, A. Zhang, Y. Gao, C. Zhang,
+X. Zhu, F. Jin, Y. Zou, N. Wang, Z. Cui, Z. Bao, Z. Zhu,
+J. Zhong, G. Liu, J.-N. Yang, Y. Han, Y. He, J. Shen,
+H. Wang, J. Huang, X. Zhang, S. Zhou, H. Dong,
+J. Deng, Y. Wu, Z. Song, H. Li, Z. Wang, C. Song,
+Q. Guo, P. Zhang, H. Wang, and Y. Li, A supercon-
+ducting surface-code processor with lattice-surgery log-
+ical operations (2026), arXiv:2606.06598 [quant-ph].
+[18] J. M. Drouet, X. C. Kolesnikow, C. K. McLauchlan,
+G. M. Nixon, S.-H. Lee, D. J. Williamson, S. D. Bartlett,
+B. J. Brown, and R. Harper, Error correction on an
+array of superconducting qubits with defective compo-
+nents (2026), arXiv:2607.12118 [quant-ph].
+[19] R. Harper, C. Lain´ e, E. Hockings, C. McLauch-
+lan, G. M. Nixon, B. J. Brown, and S. D.
+Bartlett, Characterising the failure mechanisms of error-
+corrected quantum logic gates, Nature Communications
+10.1038/s41467-026-71773-6 (2026), arXiv:2504.07258.
+[20] N. Lacroix, A. Bourassa, F. J. H. Heras, L. M. Zhang,
+J. Bausch, A. W. Senior, T. Edlich, N. Shutty, V. Sivak,
+A. Bengtsson, M. McEwen, O. Higgott, D. Kafri,
+J. Claes, A. Morvan, Z. Chen, A. Zalcman, S. Madhuk,
+R. Acharya, L. Aghababaie Beni, G. Aigeldinger, R. Al-
+caraz, T. I. Andersen, M. Ansmann, F. Arute, K. Arya,
+A. Asfaw, J. Atalaya, R. Babbush, B. Ballard, J. C.
+Bardin, A. Bilmes, S. Blackwell, J. Bovaird, D. Bow-
+ers, L. Brill, M. Broughton, D. A. Browne, B. Buchea,
+B. B. Buckley, T. Burger, B. Burkett, N. Bushnell,
+A. Cabrera, J. Campero, H.-S. Chang, B. Chiaro, L.-Y.
+Chih, A. Y. Cleland, J. Cogan, R. Collins, P. Conner,
+W. Courtney, A. L. Crook, B. Curtin, S. Das, S. De-
+mura, L. De Lorenzo, A. Di Paolo, P. Donohoe, I. Droz-
+dov, A. Dunsworth, A. Eickbusch, A. M. Elbag, M. El-
+zouka, C. Erickson, V. S. Ferreira, L. Flores Burgos,
+E. Forati, A. G. Fowler, B. Foxen, S. Ganjam, G. Garcia,
+R. Gasca, ´E. Genois, W. Giang, D. Gilboa, R. Gosula,
+A. Grajales Dau, D. Graumann, A. Greene, J. A. Gross,
+T. Ha, S. Habegger, M. Hansen, M. P. Harrigan, S. D.
+Harrington, S. Heslin, P. Heu, R. Hiltermann, J. Hilton,
+S. Hong, H.-Y. Huang, A. Huff, W. J. Huggins, E. Jef-
+frey, Z. Jiang, X. Jin, C. Joshi, P. Juhas, A. Kabel,
+H. Kang, A. H. Karamlou, K. Kechedzhi, T. Khaire,
+T. Khattar, M. Khezri, S. Kim, P. V. Klimov, B. Ko-
+brin, A. N. Korotkov, F. Kostritsa, J. M. Kreikebaum,
+V. D. Kurilovich, D. Landhuis, T. Lange-Dei, B. W.
+Langley, P. Laptev, K.-M. Lau, J. Ledford, K. Lee,
+B. J. Lester, L. Le Guevel, W. Y. Li, Y. Li, A. T.
+Lill, W. P. Livingston, A. Locharla, E. Lucero, D. Lun-
+dahl, A. Lunt, A. Maloney, S. Mandr` a, L. S. Mar-
+
+26
+tin, O. Martin, C. Maxfield, J. R. McClean, S. Meeks,
+A. Megrant, K. C. Miao, R. Molavi, S. Molina, S. Mon-
+tazeri, R. Movassagh, C. Neill, M. Newman, A. Nguyen,
+M. Nguyen, C.-H. Ni, M. Y. Niu, L. Oas, W. D.
+Oliver, R. Orosco, K. Ottosson, A. Pizzuto, R. Pot-
+ter, O. Pritchard, C. Quintana, G. Ramachandran,
+M. J. Reagor, R. Resnick, D. M. Rhodes, G. Roberts,
+E. Rosenberg, E. Rosenfeld, E. Rossi, P. Roushan,
+K. Sankaragomathi, H. F. Schurkus, M. J. Shearn,
+A. Shorter, V. Shvarts, S. Small, W. C. Smith,
+S. Springer, G. Sterling, J. Suchard, A. Szasz, A. Sztein,
+D. Thor, E. Tomita, A. Torres, M. M. Torunbalci,
+A. Vaishnav, J. Vargas, S. Vdovichev, G. Vidal, C. Voll-
+graff Heidweiller, S. Waltman, J. Waltz, S. X. Wang,
+B. Ware, T. Weidel, T. White, K. Wong, B. W. K.
+Woo, M. Woodson, C. Xing, Z. J. Yao, P. Yeh, B. Ying,
+J. Yoo, N. Yosri, G. Young, Y. Zhang, N. Zhu, N. Zo-
+brist, H. Neven, P. Kohli, A. Davies, S. Boixo, J. Kelly,
+C. Jones, C. Gidney, and K. J. Satzinger, Scaling and
+logic in the colour code on a superconducting quantum
+processor, Nature645, 614 (2025).
+[21] L. Caune, L. Skoric, N. S. Blunt, A. Ruban, J. Mc-
+Daniel, J. A. Valery, A. D. Patterson, A. V. Gramolin,
+J. Majaniemi, K. M. Barnes, T. Bialas, O. Bu˘ gdaycı,
+O. Crawford, G. P. Geh´ er, H. Krovi, E. Matekole,
+C. Topal, S. Poletto, M. Bryant, K. Snyder, N. I. Gille-
+spie, G. Jones, K. Johar, E. T. Campbell, and A. D.
+Hill, Demonstrating real-time and low-latency quantum
+error correction with superconducting qubits (2024),
+arXiv:2410.05202 [quant-ph].
+[22] I. Besedin, M. Kerschbaum, J. Knoll, I. Hesner,
+L. B¨ odeker, L. Colmenarez, L. Hofele, N. Lacroix,
+C. Hellings, F. Swiadek, A. Flasby, M. Bahrami Panah,
+D. Colao Zanuz, M. M¨ uller, and A. Wallraff, Lattice
+surgery realized on two distance-three repetition codes
+with superconducting qubits, Nature Physics22, 189
+(2026).
+[23] B. Het´ enyi and J. R. Wootton, Creating entangled log-
+ical qubits in the heavy-hex lattice with topological
+codes, PRX Quantum5, 040334 (2024).
+[24] M. Lange, O. Fjelds˚ a, G. J. Johansson, and M. Granath,
+Modular neural decoder for surface code memory and
+logic on superconducting processors, arXiv:2610.03869
+(2026).
+[25] C. Gidney and M. Eker˚ a, How to factor 2048 bit RSA
+integers in 8 hours using 20 million noisy qubits, Quan-
+tum5, 433 (2021).
+[26] C. Gidney, How to factor 2048 bit rsa integers with less
+than a million noisy qubits (2025), arXiv:2505.15917
+[quant-ph].
+[27] T. J. Yoder, E. Schoute, P. Rall, E. Pritchett,
+J. M. Gambetta, A. W. Cross, M. Carroll, and
+M. E. Beverland, Tour de gross: A modular quan-
+tum computer based on bivariate bicycle codes (2025),
+arXiv:2506.03094 [quant-ph].
+[28] N. C. Brown, A. Cross, and K. R. Brown, Critical
+faults of leakage errors on the surface code , in2020
+IEEE International Conference on Quantum Comput-
+ing and Engineering (QCE)(IEEE Computer Society,
+Los Alamitos, CA, USA, 2020) pp. 286–294.
+[29] C. Gidney, Stability Experiments: The Overlooked Dual
+of Memory Experiments, Quantum6, 786 (2022).
+[30] J. Zen, X. C. Kolesnikow, C. K. McLauchlan, G. M.
+Nixon, T. R. Scruby, S.-H. Lee, S. D. Bartlett, B. J.
+Brown, and R. Harper, Low-valency scalable quantum
+error correction with a dynamic compass code (2026),
+arXiv:2604.14299 [quant-ph].
+[31] C. Horsman, A. G. Fowler, S. Devitt, and R. V. Me-
+ter, Surface code quantum computing by lattice surgery,
+New Journal of Physics14, 123011 (2012).
+[32] A. G. Fowler, M. Mariantoni, J. M. Martinis, and A. N.
+Cleland, Surface codes: Towards practical large-scale
+quantum computation, Phys. Rev. A86, 032324 (2012).
+[33] D. Litinski, A Game of Surface Codes: Large-Scale
+Quantum Computing with Lattice Surgery, Quantum
+3, 128 (2019).
+[34] A. G. Fowler and C. Gidney, Low overhead quan-
+tum computation using lattice surgery (2019),
+arXiv:1808.06709 [quant-ph].
+[35] G. P. Geh´ er, C. McLauchlan, E. T. Campbell, A. E.
+Moylett, and O. Crawford, Error-corrected hadamard
+gate simulated at the circuit level, Quantum8, 1394
+(2024).
+[36] C. Gidney, Inplace access to the surface code y basis,
+Quantum8, 1310 (2024).
+[37] H. Bombin and M. A. Martin-Delgado, Quantum mea-
+surements and gates by code deformation, Journal of
+Physics A: Mathematical and Theoretical42, 095302
+(2009).
+[38] C. Ryan-Anderson, N. C. Brown, C. H. Baldwin, J. M.
+Dreiling, C. Foltz, J. P. Gaebler, T. M. Gatterman,
+N. Hewitt, C. Holliman, C. V. Horst, J. Johansen,
+D. Lucchetti, T. Mengle, M. Matheny, Y. Matsuoka,
+K. Mayer, M. Mills, S. A. Moses, B. Neyenhuis, J. Pino,
+P. Siegfried, R. P. Stutz, J. Walker, and D. Hayes, High-
+fidelity teleportation of a logical qubit using transversal
+gates and lattice surgery, Science385, 1327 (2024).
+[39] R. Raussendorf and J. Harrington, Fault-tolerant quan-
+tum computation with high threshold in two dimen-
+sions, Phys. Rev. Lett.98, 190504 (2007).
+[40] B. J. Brown, K. Laubscher, M. S. Kesselring, and J. R.
+Wootton, Poking holes and cutting corners to achieve
+clifford gates with the surface code, Phys. Rev. X7,
+021029 (2017).
+[41] L. Z. Cohen, I. H. Kim, S. D. Bartlett, and B. J.
+Brown, Low-overhead fault-tolerant quantum comput-
+ing using long-range connectivity, Science Advances8,
+10.1126/sciadv.abn1717 (2022).
+[42] F. Thomsen, M. S. Kesselring, S. D. Bartlett, and
+B. J. Brown, Low-overhead quantum computing with
+the color code, Phys. Rev. Res.6, 043125 (2024).
+[43] M. Davydova, A. Bauer, J. C. M. de la Fuente, M. Web-
+ster, D. J. Williamson, and B. J. Brown, Universal fault
+tolerant quantum computation in 2d without getting
+tied in knots (2025), arXiv:2503.15751 [quant-ph].
+[44] L. B¨ odeker, ´A. M´ arton, L. Colmenarez, I. Besedin,
+A. Wallraff, and M. M¨ uller, Lattice surgery for near-
+term experimental logical qubit entanglement creation
+in planar architectures (2026), arXiv:2606.15190 [quant-
+ph].
+[45] S.-H. Lee, X. C. Kolesnikow, J. Zen, E. T. Hockings,
+C. K. McLauchlan, G. M. Nixon, T. R. Scruby, S. D.
+Bartlett, R. Harper, and B. J. Brown, Scalable quan-
+tum error correction tailored for a heavy-hex qubit array
+(2026), arXiv:2604.14296 [quant-ph].
+[46] C. Chamberland, G. Zhu, T. J. Yoder, J. B. Hertzberg,
+and A. W. Cross, Topological and subsystem codes on
+
+27
+low-degree graphs with flag qubits, Phys. Rev. X10,
+011022 (2020).
+[47] C. Benito, E. L´ opez, B. Peropadre, and A. Bermudez,
+Comparative study of quantum error correction strate-
+gies for the heavy-hexagonal lattice, Quantum9, 1623
+(2025).
+[48] A. Vezvaee, C. Benito, M. Morford-Oberst,
+A. Bermudez, and D. A. Lidar, Surface code scal-
+ing on heavy-hex superconducting quantum processors
+(2025), arXiv:2510.18847 [quant-ph].
+[49] M. B. Hastings and J. Haah, Dynamically Generated
+Logical Qubits, Quantum5, 564 (2021).
+[50] C. Gidney, M. Newman, and M. McEwen, Benchmark-
+ing the planar honeycomb code, Quantum6, 813 (2022).
+[51] M. S. Kesselring, J. C. Magdalena de la Fuente,
+F. Thomsen, J. Eisert, S. D. Bartlett, and B. J. Brown,
+Anyon condensation and the color code, PRX Quantum
+5, 010342 (2024).
+[52] M. Davydova, N. Tantivasadakarn, and S. Balasubra-
+manian, Floquet codes without parent subsystem codes,
+PRX Quantum4, 020341 (2023).
+[53] F. Setiawan and C. McLauchlan, Tailoring dynamical
+codes for biased noise: the x3z3 floquet code, npj Quan-
+tum Information11, 149 (2025).
+[54] S. T. Flammia, Averaged circuit eigenvalue sampling
+(2021), arXiv:21050.02885.
+[55] E. T. Hockings, A. C. Doherty, and R. Harper, Scal-
+able noise characterization of syndrome-extraction cir-
+cuits with averaged circuit eigenvalue sampling, PRX
+Quantum6, 010334 (2025).
+[56] E. T. Hockings, A. C. Doherty, and R. Harper, Improv-
+ing error suppression with noise-aware decoding (2025),
+arXiv:2502.21044 [quant-ph].
+[57] C. A. Pattison, M. E. Beverland, M. P. da Silva, and
+N. Delfosse, Improved quantum error correction using
+soft information (2021), arXiv:2107.13589 [quant-ph].
+[58] H. Ali, J. Marques, O. Crawford, J. Majaniemi,
+M. Serra-Peralta, D. Byfield, B. Varbanov, B. M. Ter-
+hal, L. DiCarlo, and E. T. Campbell, Reducing the er-
+ror rate of a superconducting logical qubit using ana-
+log readout information, Phys. Rev. Appl.22, 044031
+(2024).
+[59] J. Majaniemi and E. S. Matekole, Reducing quantum
+error correction overhead using soft information, Quan-
+tum Science and Technology11, 025024 (2026).
+[60] IBM Quantum,https://quantum.cloud.ibm.com/
+computers(2026).
+[61] T. M. Stace, S. D. Barrett, and A. C. Doherty, Thresh-
+olds for topological codes in the presence of loss, Phys.
+Rev. Lett.102, 200501 (2009).
+[62] J. M. Auger, H. Anwar, M. Gimeno-Segovia, T. M.
+Stace, and D. E. Browne, Fault-tolerance thresholds for
+the surface code with fabrication errors, Phys. Rev. A
+96, 042316 (2017).
+[63] A. Strikis, S. C. Benjamin, and B. J. Brown, Quantum
+computing is scalable on a planar array of qubits with
+fabrication defects (2021).
+[64] A. Siegel, A. Strikis, T. Flatters, and S. Benjamin,
+Adaptive surface code for quantum error correction in
+the presence of temporary or permanent defects, Quan-
+tum7, 1065 (2023).
+[65] S. F. Lin, J. Viszlai, K. N. Smith, G. S. Ravi, C. Yuan,
+F. T. Chong, and B. J. Brown, Codesign of quantum
+error-correcting codes and modular chiplets in the pres-
+ence of defects, inProceedings of the 29th ACM Inter-
+national Conference on Architectural Support for Pro-
+gramming Languages and Operating Systems, Volume
+2, ASPLOS ’24 (Association for Computing Machinery,
+New York, NY, USA, 2024) pp. 216–231.
+[66] Z. Wei, T. He, Y. Ye, D. Wu, Y. Zhang, Y. Zhao, W. Lin,
+H.-L. Huang, X. Zhu, and J.-W. Pan, Low-overhead
+defect-adaptive surface code with bandage-like super-
+stabilizers, npj Quantum Information11, 75 (2025).
+[67] C. Leroux, S. F. Lin, P. Bienias, K. R. Sankar, A. Ben-
+hemou, A. Kubica, and J. K. Iverson, Snakes and lad-
+ders: Adapting the surface code to defects, PRX Quan-
+tum6, 040302 (2025).
+[68] D. M. Debroy, M. McEwen, C. Gidney, N. Shutty, and
+A. Zalcman, LUCI in the Surface Code with Dropouts,
+Quantum9, 1936 (2025).
+[69] R. V. Mishmash, V. Kliuchnikov, J. Bello-Rivas,
+A. Paetznick, D. Aasen, C. Knapp, Y. Wu, B. Bauer,
+M. P. da Silva, and P. Bonderson, Excising dead compo-
+nents in the surface code using minimally invasive alter-
+ations: A performance study (2025), arXiv:2508.04786
+[quant-ph].
+[70] S. Wolanski, Automated compilation including
+dropouts: Tolerating defective components in stabiliser
+codes (2026), arXiv:2512.01943 [quant-ph].
+[71] T.-H. Wei, J.-X. Zhang, J.-N. Li, W.-C. Kong, Y.-C.
+Wu, and G.-P. Guo, Adaptive deformation of color code
+in square lattices with defects (2026), arXiv:2604.05874
+[quant-ph].
+[72] O. Higgott, B. Anker, M. McEwen, and D. M. Debroy,
+Handling fabrication defects in hex-grid surface codes
+(2025), arXiv:2508.08116 [quant-ph].
+[73] B. Anker and D. M. Debroy, Optimized measurement
+schedules for the surface code with dropout (2025),
+arXiv:2512.10871 [quant-ph].
+[74] Y. Kim, S. Gicev, M. Sevior, and M. Usman, LUCI
+on IBM hardware: Error suppression with almost half
+syndrome density (2026), arXiv:2607.01887 [quant-ph].
+[75] C. McLauchlan, G. P. Geh´ er, and A. E. Moylett, Accom-
+modating Fabrication Defects on Floquet Codes with
+Minimal Hardware Requirements, Quantum8, 1562
+(2024).
+[76] N. Sundaresan, T. J. Yoder, Y. Kim, M. Li, E. H. Chen,
+G. Harper, T. Thorbeck, A. W. Cross, A. D. C´ orcoles,
+and M. Takita, Demonstrating multi-round subsystem
+quantum error correction using matching and maximum
+likelihood decoders, Nature Communications14, 2852
+(2023).
+[77] S. Krinner, N. Lacroix, A. Remm, A. D. Paolo,
+E. Genois, C. Leroux, C. Hellings, S. Lazar, F. Swiadek,
+J. Herrmann, G. J. Norris, C. K. Andersen, M. M¨ uller,
+A. Blais, C. Eichler, and A. Wallraff, Realizing repeated
+quantum error correction in a distance-three surface
+code, Nature605, 669 (2022).
+[78] S. V. Barron, B. Mitchell, V. Tripathi, F. Grieco,
+I. Rosen, F. Pietracaprina, D. Materia, A. Seif,
+D. Wanisch, R. L. Panad´ es-Barrueta, E. van den
+Berg, J.-U. Chung, A. Eddins, S. Ferracin, G. Garc´ ıa-
+P´ erez, J. Goold, L. C. G. Govia, H. Haas, I. Hincks,
+J. C. Hoke, Z. Holmes, S. un Lee, Y. Kim, S. Ma-
+jumder, S. Maniscalco, S. Montangero, D. Puzzuoli,
+T. Prosen, J. Raftery, R. R. Cardoso, M. Rossmannek,
+M. Rudolph, B. Saxberg, L. Shirizly, K. Siva, J. Skanes-
+Norman, I. Siloi, K. C. Smith, B. Sokolov, M. Takita,
+
+28
+Y. Teng, M. T. Tan, J. Tindall, Z. Zimbor´ as, M. A. C.
+Rossi, M. C. Tran, S. N. Filippov, and A. Kandala, Ob-
+servable estimation in the absence of classical verifica-
+tion (2026), arXiv:2607.25998 [quant-ph].
+[79] H. Bomb´ ın, M. Pant, S. Roberts, and K. I. Seetharam,
+Fault-tolerant postselection for low-overhead magic
+state preparation, PRX Quantum5, 010302 (2024).
+[80] C. Gidney, M. Newman, P. Brooks, and C. Jones, Yoked
+surface codes, Nature Communications16, 4498 (2025).
+[81] N. Meister, C. A. Pattison, and J. Preskill, Effi-
+cient soft-output decoders for the surface code (2024),
+arXiv:2405.07433 [quant-ph].
+[82] S. C. Smith, B. J. Brown, and S. D. Bartlett, Mitigat-
+ing errors in logical qubits, Communications Physics7,
+10.1038/s42005-024-01883-4 (2024).
+[83] O. Higgott, T. C. Bohdanowicz, A. Kubica, S. T. Flam-
+mia, and E. T. Campbell, Improved decoding of circuit
+noise and fragile boundaries of tailored surface codes,
+Phys. Rev. X13, 031007 (2023).
+[84] M. S. Alam, J. Zen, and T. R. Scruby, Bacon-shor board
+games (2025), arXiv:2504.02749 [quant-ph].
+[85] O. Higgott, Pymatching: A python package for de-
+coding quantum codes with minimum-weight perfect
+matching (2021), arXiv:2105.13082 [quant-ph].
+[86] G. P. Geh´ er, M. Jastrzebski, E. T. Campbell, and
+O. Crawford, To reset, or not to reset—that is the ques-
+tion, npj Quantum Information11, 39 (2025).
+[87] L. H. English, D. J. Williamson, and S. D. Bartlett,
+Thresholds for postselected quantum error correction
+from statistical mechanics, Physical Review Letters
+135, 10.1103/nh49-52y2 (2025).
+[88] S.-H. Lee, L. H. English, and S. D. Bartlett, Effi-
+cient post-selection for general quantum ldpc codes, npj
+Quantum Information12, 10.1038/s41534-026-01242-x
+(2026).
+[89] H. Chen, D. Xu, G. M. Sommers, D. A. Huse, J. D.
+Thompson, and S. Gopalakrishnan, Scalable accuracy
+gains from postselection in quantum error correcting
+codes (2026), arXiv:2510.05222 [cond-mat.stat-mech].
+[90] Y. Wang, F. Shen, H. Xie, A. Zhang, Y. Gao, C. Zhang,
+X. Zhu, F. Jin, Y. Zou, N. Wang, Z. Cui, Z. Bao, Z. Zhu,
+J. Zhong, G. Liu, J.-N. Yang, Y. Han, Y. He, J. Shen,
+H. Wang, J. Huang, X. Zhang, S. Zhou, H. Dong,
+J. Deng, Y. Wu, Z. Song, H. Li, Z. Wang, C. Song,
+Q. Guo, P. Zhang, H. Wang, and Y. Li, A supercon-
+ducting surface-code processor with lattice-surgery log-
+ical operations (2026), arXiv:2606.06598 [quant-ph].
+[91] P. Aliferis and B. M. Terhal, Fault-tolerant quantum
+computation for local leakage faults, Quantum Info.
+Comput.7, 139–156 (2007).
+[92] M. Werninghaus, D. J. Egger, F. Roy, S. Machnes, F. K.
+Wilhelm, and S. Filipp, Leakage reduction in fast super-
+conducting qubit gates via optimal control, npj Quan-
+tum Information7, 10.1038/s41534-020-00346-2 (2021).
+[93] F. Battistel, B. Varbanov, and B. Terhal, Hardware-
+efficient leakage-reduction scheme for quantum error
+correction with superconducting transmon qubits, PRX
+Quantum2, 030314 (2021).
+[94] Y. Xin, S. L. M. van der Meer, M. Serra-Peralta,
+T. H. F. Vroomans, M. Finkel, H. M. Veen, M. W.
+Beekman, and L. DiCarlo, Improved error correction
+with leakage reduction units built into qubit measure-
+ment in a superconducting quantum processor (2025),
+arXiv:2511.17460 [quant-ph].
+[95] G. Torlai and R. G. Melko, Neural decoder for topolog-
+ical codes, Physical Review Letters119, 10.1103/phys-
+revlett.119.030501 (2017).
+[96] J. Bausch, A. W. Senior, F. J. H. Heras, T. Edlich,
+A. Davies, M. Newman, C. Jones, K. Satzinger, M. Y.
+Niu, S. Blackwell, G. Holland, D. Kafri, J. Atalaya,
+C. Gidney, D. Hassabis, S. Boixo, H. Neven, and
+P. Kohli, Learning high-accuracy error decoding for
+quantum processors, Nature635, 834 (2024).
+[97] B. M. Varbanov, M. Serra-Peralta, D. Byfield, and B. M.
+Terhal, Neural network decoder for near-term surface-
+code experiments, Phys. Rev. Res.7, 013029 (2025).
+[98] A. W. Senior, T. Edlich, F. J. H. Heras, L. M. Zhang,
+O. Higgott, J. S. Spencer, T. Applebaum, S. Black-
+well, J. Ledford, A. ˇZemgulyt˙ e, A. ˇZ´ ıdek, N. Shutty,
+A. Cowie, Y. Li, G. Holland, P. Brooks, C. Beattie,
+M. Newman, A. Davies, C. Jones, S. Boixo, H. Neven,
+P. Kohli, and J. Bausch, A scalable and real-time
+neural decoder for topological quantum codes (2026),
+arXiv:2512.07737 [quant-ph].
+[99] L. A. Beni, O. Higgott, and N. Shutty, Tesseract:
+A search-based decoder for quantum error correction
+(2025), arXiv:2503.10988 [quant-ph].
+[100] S. T. Flammia, ACES,https://github.com/sflammi/
+ACES(2021).
+[101] E. T. Hockings, QuantumACES.jl: design noise charac-
+terisation experiments for quantum computers, Journal
+of Open Source Software10, 7707 (2025).
+[102] W. Lin, S. Guo, Y. Ma, Z. Yi, K. Zhang, J. Bei, J. Cai,
+S. Cao, D. Chen, G. Chen, J. Chen, K. Chen, X. Chen,
+Z. Chen, Z. Chen, Z. Chen, W. Chu, H. Deng, X. Ding,
+Z. Ding, Y. Du, B. Fan, D. Fan, Y. Fu, D. Gao, M. Gong,
+J. Gui, C. Guo, L. Han, T. He, L. Hong, Y. Hu, H.-
+L. Huang, Y.-H. Huo, C. Jiang, L. Jiang, T. Jiang,
+W. Jiang, Z. Jiang, D. Li, D. Li, J. Li, J. Li, J. Li,
+S. Li, W. Li, X. Li, Y. Li, Y. Li, F. Liang, N. Liao,
+J. Lin, M. Liu, Y. Liu, H. Lou, K. Nan, M. Nie, L. Niu,
+W. Peng, H. Qian, H. Rong, T. Rong, Y. Shao, H. Shen,
+Q. Shen, G. Song, H. Su, F. Su, C. Sun, D. Sun, L. Sun,
+T. Sun, Y. Sun, Y. Tan, J. Tan, S. Tang, Y. Tang,
+W. Tu, J. Wang, B. Wang, C. Wang, C. Wang, C. Wang,
+J. Wang, R. Wang, S. Wang, X. Wang, Z. Wang, Z. Wei,
+G. Wu, Y. Wu, H. Xia, S. Xia, S. Xie, Z. Xie, L. Xiong,
+J. Xu, Y. Xu, Y. Xu, C. Xue, K. Yan, X. Yan, W. Yang,
+X. Yang, Y. Yang, Y. Yang, Y. Ye, Z. Ye, J. Yin,
+C. Ying, J. Yu, Q. Yu, C. Zha, S. Zhan, C. Zhang,
+F. Zhang, H. Zhang, H. Zhang, H. Zhang, K. Zhang,
+Q. Zhang, S. Zhang, W. Zhang, X. Zhang, Y. Zhang,
+Y. Zhang, Z. Zhang, G. Zhao, X. Zhao, Y. Zhao,
+Z. Zhao, L. Zheng, F. Zhou, L. Zhou, N. Zhou, C. Zhu,
+Q. Zhu, Y. Zhu, G. Zou, H. Zou, Q. Zhang, C.-Y.
+Lu, J. Chen, C.-Z. Peng, F. Chen, X. Zhu, and J.-W.
+Pan, Surface code logical operations on a superconduct-
+ing quantum processor (2026), arXiv:2607.01473 [quant-
+ph].
+[103] O. Higgott and C. Gidney, Sparse Blossom: correcting
+a million errors per core second with minimum-weight
+matching, Quantum9, 1600 (2025).

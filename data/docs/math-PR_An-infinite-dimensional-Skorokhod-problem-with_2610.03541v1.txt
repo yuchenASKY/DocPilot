@@ -1,0 +1,1438 @@
+Title: An infinite-dimensional Skorokhod problem with a diagonalization approach
+Authors: Louis T. Clarke, Guodong Pang, Ruoyu Wu
+Published: 2026-10-02
+arXiv: 2610.03541v1
+Subject: math.PR
+Source: https://arxiv.org/abs/2610.03541v1
+Pages: 22
+========================================================================
+
+An infinite-dimensional Skorokhod problem
+with a diagonalization approach
+LOUIS T. CLARKE∗, GUODONG PANG∗ AND RUOYU WU∗∗
+Abstract.We study an infinite-dimensional Skorokhod problem on the positive cone ofL 1([0,1]),
+where a regulator process constrains a free c` adl` ag path to remain nonnegative through an oblique
+reflection mechanism determined by a positive linear integral operatorFonL 1([0,1]) with spectral
+radius less than 1. This constrained processZremains in the positive cone, and the regulatorYis
+nondecreasing with respect to the cone order and satisfies a pointwise complementarity condition,
+increasing only on those space-time regions where the corresponding component ofZvanishes.
+This formulation extends the classical multidimensional Skorokhod problem on the nonnegative
+orthant to an infinite-dimensional setting. Under suitable assumptions on the operatorFthat
+guarantee a dominant positive eigenfunction, we proceed through a diagonalization argument to
+give an alternative representation of the system in which theL 1 norm of the linear operator is
+less than 1. From this characterization, we establish existence and uniqueness of solutions for
+arbitrary input pathsX∈D([0, T], L 1([0,1])). We further show that the associated Skorokhod
+map is well defined and Lipschitz continuous with respect to both the uniform and SkorokhodJ 1
+topologies. As a consequence, solutions may be obtained as limits of multidimensional Skorokhod
+problems, providing a constructive characterization of the infinite-dimensional reflection mechanism.
+These results provide a framework for the study of constrained stochastic systems with infinitely
+many interacting components and provide a foundation for reflected stochastic processes evolving
+in function spaces.
+1.Introduction
+The Skorokhod problem provides a mechanism for constraining a path to remain within a pre-
+scribed domain through the action of a regulator process. In the classicald-dimensional setting on
+the nonnegative orthant, the reflected path is represented as
+z(t) =x(t) + (I−F)y(t),(1.1)
+wherexis the unconstrained input path onD([0,T],R d), andyis a nondecreasing regulator chosen
+so thatzremains nonnegative, andIis the identity matrix. We refer tozas the reflected process
+andyas the regulator. The matrixFdetermines the directions in which the regulating force acts
+at the boundary, and has spectral radius less than 1. WhenF≡0, the reflection occurs along the
+coordinate directions and coincides with the standard orthogonal reflection. More generally, the
+term (I−F)yallows the regulator to act in directions that are not normal to the boundary, leading
+to an oblique reflection mechanism. This has been extensively studied, see [8, 3, 15, 4, 7], and has
+seen particular application to Jackson networks and other stochastic network and queueing models.
+In [5], this concept was recently extended to an uncountably infinite dimension, considering paths
+inD([0,T],L 1([0,1])) and replacing the nonnegative orthant with the positive cone ofL 1([0,1]).
+∗Department of Computational Applied Mathematics and Operations Research, George R. Brown
+School of Engineering and Computing, Rice University, Houston, TX 77005
+∗∗Department of Mathematics, Iowa State University, Ames, IA 50011
+E-mail address:lc160, gdpang@rice.edu, ruoyu@iastate.edu.
+Key words and phrases.Infinite-dimensional Skorokhod problem, reflection operator, existence and uniqueness,
+diagonalization, Lipschitz continuity, spaceD([0, T], L 1).
+1
+arXiv:2610.03541v1 [math.PR] 2 Oct 2026
+
+2
+Specifically, given a c` adl` ag input pathX={Xu(t)}u∈[0,1],t∈[0,T]∈D([0,T],L 1([0,1])), we consider
+the problem of finding a pair of c` adl` ag processes (Z,Y) satisfying
+Z(t) =X(t) + (1−F)Y(t),(1.2)
+whereFis a positive linear integral operator onL 1([0,1]) with spectral radius less than 1, known
+as the reflection operator. We choose (Y,Z) such that the reflected processZremains in the
+positive cone, and the regulatorYis nondecreasing with respect to the cone order and satisfies
+a pointwise complementarity condition, namely,Z u(t)dYu(t) = 0 for allu∈[0,1]. Futhermore,
+one can show that under the uniform norm∥f∥ T,1 =
+R 1
+0 sup0≤t≤T|fu(t)|du, the solutions to the
+Skorokhod problemYandZare Lipschitz with respect to inputsFandX. Together, we refer to
+the solution (Y,Z) as the reflection map, and ask, given free processXand reflection operatorF,
+whether the reflection map exists, is unique, and is Lipschitz continuous with respect to both the
+free process and reflection operator.
+The Skorokhod problem originated in 1961 with the seminal work of Skorokhod [13], who intro-
+duced diffusion processes in one dimension with reflecting boundaries and established existence and
+uniqueness results. In this setting, reflection was studied primarily as a mechanism for constructing
+stochastic processes. This was further studied by McKean in [10, 11], looking at multi-dimensional
+diffusions and stochastic boundary problems. The multi-dimensional problem was further studied
+by Tanaka in [14], studying reflected Brownian motion with normal reflection. The theory was
+significantly extended in 1981 by Harrison and Reiman [8], who considered reflected Brownian
+motion in the nonnegative orthant and introduced the multidimensional reflection equation (1.1).
+Subsequent developments shifted attention from specific diffusion processes to the deterministic
+mapping that associates an unconstrained path with its reflected counterpart. The work by Chen
+and Mandelbaum [2] studied the problem inD([0,T],R d) and developed geometric interpretations
+of the regulator through production-set formulations and further clarified the structure of oblique
+reflection. This framework was further developed by Whitt [15, Chapter 14], formalizing the notion
+of a regulator set. A more abstract perspective was introduced by Dupuis and Ishii [6], who stud-
+ied the Skorokhod map inC([0,T],R d) as a deterministic operator on path spaces and established
+fundamental continuity and Lipschitz properties.
+When studying the finite-dimensional Skorokhod problem posed by (1.1), there are two distinct
+approaches to establish existence, uniqueness, and Lipschitz continuity. In [8], the solution to the
+Skorokhod problem is characterized as the unique fixed point of a mapping which is shown to
+be a contraction through a diagonalization argument on the routing matrix. Here, the diagonal
+matrixDtakes entries from the dominant eigenvector ofF T such thatDFD −1 has the maximum
+column sum equal to its spectral radius, specified as being less than 1. This property allows for
+direct contraction mapping arguments to be used in the arguments for existence, uniqueness, and
+Lipschitz continuity. Through the introduction of the regulator set, works such as [2] and [15] do
+not rely on a diagonalization argument. Instead, they show that the regulatory(t) is the infimum
+of the set{w∈D([0,T],R d) :x+(I−F)w≥0}. Existence is proved by showing that the regulator
+set is nonempty, and uniqueness follows from the definition of the infimum. This instead relies on
+the properties ofF, in particular that as the spectral radius is less than 1, it must hold for some
+k≤dthatF k has maximum column sum less than 1. From this, one can formk-stage contraction
+arguments similar to those of the diagonalized case, from which continuity and Lipschitz properties
+can be established.
+In moving from finite to infinite dimension, one must formalize similar concepts moving from
+processes in the spaceD([0,T],R d) toD([0,T],L 1([0,1])). In [5, Section 3], we adapt the latter of
+the two methods mentioned in the paragraph above. In this case, the regulator set is extended to
+this new space, namely{W∈D([0,T]L 1([0,1])) :X+ (1−F)W≥0}. Here, the solutionYto
+(1.2) is given by the pointwise infimum of the regulator set, withZfollowing its definition in the
+same equation. One then shows that the regulator can equivalently be written as the unique fixed
+
+3
+point of a mappingπ. Under the condition that the (operator) spectral radius ofFis less than 1,
+one can then apply the fact that theL 1 norm of thek-fold composition ofFmust be less than 1
+for somek≥1 to show thatπis ak-stage contraction. Similarly to [15] this can then be used to
+derive Lipschitz properties of the reflection map with respect to both the free processXand the
+reflection operatorF.
+In this paper, we instead adopt the diagonalization approach first introduced in [8]. For the
+finite-dimensional Skorokhod problem, to proceed with a diagonalization argument it is sufficient
+to simply assume that the spectral radius of the transition matrix is less than 1. However, one must
+take more care when dealing with operators, as the behavior of a general positive diagonal system
+may not restrict boundedness of the constants associated with Lipschitz conditions to be finite. To
+be more preceise, if diagonalization causes the sytem to either vanish or explode at certain points,
+then these points will cause issues when converting back to the original system. This imposes a
+new set of assumptions on the reflection operatorF, ensuring thatFis both eventually strongly
+positive and quasi-compact (see Assumption 2.1). Under this framework, we establish existence
+and uniqueness of solutions to the Skorokhod problem in Theorem 2.1. To do this, we introduce
+a mappingπ X,F on the function space for the diagonalized system that is shown to have a unique
+fixed point that satisfies the Skorokhod problem.
+We next consider Lipschitz continuity of the reflection map, first in the∥·∥T,1 metric. By creating
+two iterative processes using the mappingπ X,F so each converges to the fixed point characterized
+by the regulator of the Skorokhod problem, we prove two results on Lipschitz continuity, first in
+the free processXin Theorem 5.1, and then in the reflection operatorFin Lemma 5.2. Combining
+these two results, along with a further result allowing two separate processes to share the same
+diagonal operator if their reflection operators are close enough in theL 1 norm, provides a Lipschitz
+continuity result in both the free process and the reflection operator in Theorem 5.3. This is
+extended to Theorem 5.4 for a sequence of processes that converge to a limit process. We also
+study the corresponding Lipschitz continuity properties of the refleciton map under the Skorokhod
+J1 metric (see the metric defined in (5.11)). To work with this topology, we first present an explicit
+result on time rescaling of the reflection map, in Proposition 5.1. This provides the necessary theory
+to prove results in Lipschitz continuity with this new metric. with respect to the free process in
+Theorem 5.5 and with respect to both the free process and reflection operator in Theorem 5.6.
+The Skorokhod problem plays a fundamental role in the study of constrained stochastic systems.
+A prominent example arises in Jackson queueing networks, where queue lengths must remain non-
+negative and the cumulative idle-time process when a station is not serving any customers acts as
+a regulator preventing excursions below zero. In the case when the spectral radius of the transition
+matrix is less than one, this represents an open Jackson network, where jobs can enter and leave the
+system at different nodes. In heavy traffic, for the queue-length and workload processes, fluid limits
+are typically given as the deterministic solution of the Skorokhod problem, while diffusion approx-
+imations are described by reflected Brownian motions whose sample paths are obtained through
+solutions of an associated Skorokhod problem, see [15].
+The infinite-dimensional Skorokhod problem can see application arising naturally in systems
+with a continuum of interacting components, such as measure-valued population models, stochas-
+tic transport and storage systems, and large-scale (spatial) queueing networks indexed by a con-
+tinuous parameter. In these settings the state of the system is more naturally represented by
+a function or measure rather than a finite-dimensional vector, leading to reflection problems on
+infinite-dimensional spaces. This paper along with [5] can therefore provide a foundation for the
+analysis of constrained stochastic processes evolving in function spaces and for the study of contin-
+uum limits of large interacting systems with certain constraints.
+1.1.Organization of the paper.The paper is organized as follows. In the next subsection, we
+summarize the notation and some definitions used throughout the paper. In Section 2, we formally
+
+4
+define the model and present theorems on diagonalization of linear operators, and present Theorem
+2.1 proving uniquneness and existence of a solution. In Section 3, we provide the theory behind
+diagonalization of operatorFunder Assumption 2.1. In Section 4, we prove Theorem 2.1. In
+Section 5, we provide theorems on Lipschitz continuity, first in the uniform norm and then using
+the time-scaledJ 1 topology. Supplementary theory and additional proofs are given in Appendix A.
+1.2.Definitions and Notation.We summarize the commonly used notation here. LetD k
+T =
+D([0,T],R k) be the space of c` adl` ag functions on [0,T] taking values inR k. Forx∈D k
+T ,xhas
+componentsx i(t),t∈[0,T],i= 1,...,k. LetC k
+T be the subspace of continuous function inD k
+T .
+Fork= 1, we simply writeC T andD T . Forx: [a,b]→R, we define∥x∥ 1 =
+R
+[a,b]|x(u)|du
+SpaceD T (L1).We sayf :={f u(t) :u∈[0,1],t∈[0,T]}∈D T (L1) iff∈D([0,T],L 1[0,1]),
+meaning that (i)∥f∥ T,1 <∞, where
+∥f∥T,1 :=
+Z 1
+0
+sup
+0≤t≤T
+|fu(t)|du,(1.3)
+and (ii) for eachu∈[0,1],f u∈D T . Note that the dominated convergence theorem guarantees
+that [0,T]∋t7→{f u(t) :u∈[0,1]}∈L 1 is c` adl` ag forf∈DT (L1). We writeC T (L1) to denote the
+subspace ofD T (L1), containing functions that are continuous int, that is, in condition (ii) above,
+fu∈C T . DefineD ↑
+T (L1) ={f∈D T (L1) :f u(0)≥0, df u(t)≥0∀t∈[0,T],u∈[0,1]}, and define
+C↑
+T (L1) analogously. Forf,g∈D T (L1), we sayf≥giff u(t)≥g u(t) for allu∈[0,1] andt∈[0,T].
+Fory∈D T (L1) and anyt∈[0,T], [f(t)] + is defined for anyu∈[0,1] by [f(t)] +
+u := [fu(t)]+, where
+[x]+ := max(x,0) forx∈R.
+Operators.For a functionG: [0,1] 2→R +, we use the bold symbol to denote the corresponding
+integral operatorGby
+(Gf)(u) :=
+Z 1
+0
+G(u,v)f(v)dv, f: [0,1]7→R.(1.4)
+Denote the set of integral operators byG. When an operatorGis given, it should be understood
+that the non-boldGrepresents the corresponding kernel function. In the case where we are dealing
+with functions inD T (L1), it should be understood that the operator acts on the spatial dimension,
+not the temporal, and can be written as
+(Gf)u(t) :=
+Z 1
+0
+G(u,v)fv(t)dv, f∈D T (L1).(1.5)
+OperatorGis said to benonnegativeand we writeG≥0 ifG(u,v)≥0 for all (u,v)∈[0,1]×[0,1],
+andG≤0 is defined analogously. The transposeG T of operatorGis defined as
+(GTf)(u) :=
+Z 1
+0
+G(v,u)f(v)dv.(1.6)
+Then-fold composition of operatorGis denotedG (n). The operator norm∥G∥ op of an integral
+operator is given by
+∥G∥op := sup
+v∈[0,1]
+Z 1
+0
+|G(u,v)|du.
+For integral operatorsF 1,F 2 andf∈D T (L1), we have∥F 1f∥T,1≤∥F 1∥op∥f∥T,1 and∥F 1F 2∥op≤
+∥F 1∥op∥F 2∥op. These properties are proved in Lemmas A.1 and A.2 of [5].
+The identity operator1acts on eitherL 1 orD T (L1) through
+(1f)(u) :=f(u), f: [0,1]7→R,
+(1f)u(t) :=f u(t), f∈D T (L1).
+As∥1f∥ T,1 =∥f∥ T,1, we also define∥1∥ op = 1.
+
+5
+For functionsf,g∈D T (L1), we define diag(f) by (diag(f)g) u(t) =f u(t)gu(t).
+LetFbe an operator as defined in (1.4) andρ(F) be the spectral radius ofF. Define the set of
+reflection operators:
+R:={F∈G:F≥0 andρ(F)<1}.(1.7)
+Denote
+eR:={F∈R:∥F∥ op<1}(1.8)
+as the subset ofRwith operator norm strictly less than 1.
+For functionsf,g: [0,1]→R, define the diagonal operatorD= diag(f) by (Dg)(u) =f(u)g(u)
+and (D−1g)(u) = g(u)
+f(u) . For such anf, the operator norm acts as∥D∥ op = ess supu∈[0,1]f(u)
+and∥D −1∥op = (ess infu∈[0,1]f(u))−1, whenever these values are finite. We say diagonal operator
+D= diag(f) is strictly positive iff >0 a.e.u∈[0,1].
+The following property will be used several times throughout the paper: For any two measurable
+functionsf,g: [0,T]→Randt∈[0,T],
+ sup
+0≤s≤t
+f(s)−sup
+0≤s≤t
+g(s)
+≤sup
+0≤s≤t
+|f(s)−g(s)|.(1.9)
+Remark 1.1.For processes inD([0,T],L 1([0,1])), an alternative metric could be of the form
+supt∥·∥ 1. Although this metric is equivalent to the metric∥·∥ T,1 in the finite-dimensional setting,
+we find it more appropriate to use the metric∥·∥ T,1 in the infinite-dimensional setting for both
+technicalities and applications.
+Technically, this can be seen in Section 4, where the regulator for the Skorokhod problem is given
+as the running supremum of[−X(t) +FY(t)] +. As this is given as the pointwise solution, it makes
+more natural sense that the norm be of the form∥·∥ T,1, measuring theL 1 norm of the pointwise
+supremums of each function. For applications, particularly in the mean-field type of analysis of
+large-scale network models and interacting systems, the convergence of functionals of empirical
+measures would require the metric∥·∥ T,1 (see,e.g.,[5]).
+2.An infinite-dimensional Skorokhod problem via diagonalization
+We study the following system:
+Z(t) =X(t) + (1−F)Y(t)≥0,(2.1)
+dY(t)≥0 andY(0) = 0,(2.2)
+Zu(t)dYu(t) = 0 for allu∈[0,1].(2.3)
+We say that this set of equations defines an infinite-dimensional Skorokhod mapping inD T (L1).
+We refer toXas thefree process. When we have existence and uniqueness of (Z,Y) givenX,
+denote by ΦF (X) :=Zand Ψ F (X) :=Ythereflected processandregulator, respectively. It
+should be understood thatdY u(t)≥0 is interpreted asY u(·) nondecreasing,dY u(t)>0 asY u(·)
+increasing, and that (2.3) is interpreted asY u(·) increases only whenZ u(t) = 0.
+Given anyX∈D T (L1) andF∈Ras defined in (1.7), we aim to prove the following properties:
+•Existence and uniqueness of (Y,Z)∈(D ↑
+T (L1),DT (L1)) satisfying (2.1)–(2.3).
+•Continuity and Lipschitz of (Y,Z) in bothXandF.
+To continue, we first introduce the diagonalized system, in an analogous manner for the finite
+dimensional Skorokohod mapping in [8].
+
+6
+Definition 2.1(Diagonalized System).LetDbe a strictly positive diagonal operator. By letting
+eP=DF D −1, we can continue the analysis of(2.1)–(2.3):
+Z(t) =X(t) + (1−F)Y(t)
+=⇒DZ(t) =DX(t) +D(1−F)D −1DY(t)
+=⇒DZ(t) =DX(t) + (1− eP)DY(t).
+In this way, we have replacedYwithDYand sinceDis a strictly positive operator, the dynam-
+ics of the problem is identical to the original problem.
+Further writing eX=DX, eY=DYand eZ=DY, we can then rewrite(2.1)–(2.3)as
+eZ(t) = eX(t) + (1− eP)eY(t)≥0,(2.4)
+deY(t)≥0and eY(0) = 0,(2.5)
+eZu(t)deYu(t) = 0for allu∈[0,1].(2.6)
+We refer to this as thediagonalized system.
+Note that while the diagonlized system can be defined for any strictly positive diagonal operator,
+to be of any use for our analysis, we aim to find a diagonal operatorDsuch that the reflection
+matrix of the diagonalized system ePsatisfies∥ eP∥op <1, i.e., eP∈ eRas defined in (1.8). We will
+show that for such a eP, in this new system the questions of existence, uniqueness, and Lipschitz
+continuity can be concisely proved. We provide below an assumption that guarantees this.
+Assumption 2.1.ForF∈R, both of the following properties hold:
+(i)F T is strongly positive: for everyf∈L ∞([0,1]),f≥0, wheref >0on a set of positive
+measure, there existsn≥1such thatess inf u∈[0,1]((FT )(n))f(u)>0,
+(ii)F T is quasi-compact:ρ ess(F)<ρ(F), whereρ ess(F)is the essential spectral radius ofF.
+We now present a proposition formalizing the discussion above. Its proof is given in Section 3.
+Proposition 2.1.LetFbe an operator inRsatisfying Assumption 2.1. Then there exists a
+diagonal multiplication operatorD= diag(δ)such thatess inf u∈[0,1]δ(u)>0,ess sup u∈[0,1]δ(u)<
+∞, and the operatorP :=D−1FT Dsatisfies
+Z 1
+0
+P(u,v)dv=ρ(F)<1,∀u∈[0,1].(2.7)
+Furthermore, letting eP=DF D −1, we have
+Z 1
+0
+eP(u,v)du=ρ(F)<1,∀u∈[0,1].
+In particular, eP∈ eR, and
+∥eP∥op =ρ(F)<1.
+Remark 2.1.This is an infinite-dimensional version of the result for matrices, seen in Theorem
+2.5.4 of[1].
+While Assumption 2.1 provides sufficient conditions to diagonalize the system in a meaningful
+way, it may be difficult in general to check if an operatorFsatisfies its conditions. We present
+below an interpretable example that satisfies the conditions of Assumption 2.1. The proof can be
+found in Appendix A.
+
+7
+Lemma 2.1.The following condition onFsatisfies both conditions (i) and (ii) of Assumption
+2.1:
+ForF∈R, there existsm∈N,ϵ> 1
+2, and a probability density functionνon[0,1]withν >0
+a.e. such that for eachu,v∈[0,1],
+(FT )(m)(u,v)≥ϵν(v),(2.8)
+where(F T )(m) is the kernel associated with operator(F T )(m).
+We now present the first major result of the paper.
+Theorem 2.1.For anyF∈Rsatisfying Assumption 2.1 and anyX∈D T (L1)such thatX(0)≥0,
+there exists a unique pair(Y,Z)∈D ↑
+T (L1)×D T (L1)satisfying(2.1)–(2.3).
+Recall that we denote ΦF (X) :=Zand Ψ F (X) :=Y. The proof for this theorem is in section 4
+and will be approached by using at the diagonalized system.
+Remark 2.2.The system(2.1)–(2.3)can be thought of as the following. For any free process
+X, the regulatorYis the least such increasing process such that the resultant processZremains
+positive. The term1−Facts as an oblique reflection, instead of the typical normal reflection,
+ensuring that wheneverZ u(t) = 0,Y(t)will increase accordingly to keepZ(t)from becoming neg-
+ative. A model of this kind can arise from the fluid limit of an open Markovian Jackson network
+as the number of servers increases to infinity. More explicitly, we start with the queue length
+processQ N ={Q N
+1 ,...,Q N
+N}∈D N
+T and idle timeI N ∈D N
+T , whereI i(0) = 0,dI i(t)≥0, andR∞
+0 1{QN
+i (t)>0}dIN
+i (t) = 0for alli∈[n]. If one scalesQ N by ¯QN
+i (t) :=N −αQN
+i (Nαt),α >0,
+then one can approximate ¯QN by a function ¯Q∈ CT (L1), as we show in[5]. Here, we write
+X(t) := ¯Q(0) +λt−(1−G T )µtwithY(t) := ¯Y(t) := diag(µ) ¯I(t)andZ(t) := ¯Q(t), where ¯Q(0)
+represents the initial fluid limit of the queue-length process,λ= (λ u)u∈[0,1] andµ= (µ u)u∈[0,1] are
+the respective scaled arrival and service rate functions inL 1([0,1])for the fluid process,Gis the
+limiting transition operator arising from the routing matrix of the network, and ¯Iis the fluid limit
+of the scaled idle time process. For the limiting process it follows thatd ¯Iu(t)≥0, ¯Iu(0) = 0andR∞
+0 1{ ¯Qu(s)>0} ¯Iu(ds) = 0for allu∈[0,1]. It is easy to verify that these properties satisfy conditions
+(2.1)–(2.3).
+Remark 2.3.One should also note that the finite-dimensional Skorokhod problem may be written
+in the more general form (see, e.g.,[7, 4])
+z(t) =x(t) +Ry(t),(2.9)
+(see, e.g.,[7, 4]) whereRis a reflection matrix. It is assumed thatRis in the space of M-matrices
+(positive diagonal elements, non positive off-diagonal elements, and a nonnegative inverse). Given
+such anR, one can writeR= (I−F)D, whereDis a diagonal matrix with diagonal entries equal
+to those ofRandFis a positive matrix withρ(F)<1. Conversely, given a positive matrixFwith
+ρ(F)<1, it follows thatRis an M-matrix. In this way, solving the finite-dimensional Skorokhod
+problem the form(2.9)is equivalent to solving the problem in the form(1.1). This relationship
+applies to our infinite-dimensional setting. We can instead define the Skorokhod problem via the
+equation
+Z(t) =X(t) +RY(t).(2.10)
+Here,R∈ ¯R, where ¯R⊂Gis defined as the set of operators that can be written in the form
+R= (1−F)D, whereF∈RandDis a strictly positive diagonal operator, analogous to the set
+of M-matrices in finite-dimension. Clearly by letting eY=DY, we recover the system determined
+by(2.1)–(2.3)withYreplaced by eY.
+One may also note that M-matrices can be equivalently defined asR=sI−B, whereB≥0
+element-wise andρ(B)<s. We can similarly define ¯RthroughR=s1−B, whereρ(B)<1. In
+
+8
+this case, lettingF= 1
+s Band writing eY=sYwe see that in this form,(2.9)is still equivalent to
+(2.1).
+3.Eigenfunctions of operators inRand Proof of Proposition 2.1
+In this section we establish the necessary theory to ensure that the diagonalization argument
+established in Definition 2.1 can be applied in a reconstructible manner; that is, for any results we
+achieve under the diagonalized system, we can revert to the initial system. In order to do this in
+a meaningful way one would hope that the diagonal operators are strictly bounded away from 0
+and infinity. We will show in this section that indeed Assumption 2.1 achieves such conditions, by
+providing background theory and a proof to Proposition 2.1. We begin with a generalization of the
+Krein-Rutman theorem that applies directly to the conditions of Assumption 2.1.
+Lemma 3.1.LetX=L ∞([0,1]),K={f∈X:f≥0a.e.}, and letT:X →Xbe a bounded
+linear operator such that
+•Tis positive:T(K)⊂K,
+•Tis quasi-compact:ρ ess(T)<ρ(T), whereρ ess(T)is the essential spectral radius ofT,
+•Tis eventually strongly positive: for everyf∈K\{0}, there existsn≥1such thatT (n)f∈
+int(K), where int(K) ={f∈X: ess inff >0}.
+Thenρ(T)is an eigenvalue ofTand there exists a unique (up to scaling) eigenfunctionυ∈
+int(K)such thatTυ=ρ(T)υ. Furthermore,υis strictly bounded above0in the sense that
+ess infu∈[0,1]υ(u)>0.
+Proof.First, applying [12, Corollary 2.2], asTis quasi-compact, we are guaranteed that there
+exists an eigenfunctionυsuch thatTυ=ρ(T)υandυ≥0 a.e. Then, by eventual strong positivity,
+ess inf
+u∈[0,1]
+(T (n)υ)(u)>0 =⇒ρ(T) n ess inf
+u∈[0,1]
+υ(u)>0,
+and so ess infu∈[0,1]υ(u)>0 a.e. as required.□
+Note that by definition,F∈Racts onL 1([0,1]) and its transpose (or adjoint)F T acts on
+L∞([0,1]). It is then clear to see that for anyF∈Rsatisfying Assumption 2.1, its transposeF T
+satisfies the conditions of Lemma 3.1.
+Lemma 3.2.LetFbe an integral operator andD= diag(δ)be a diagonal operator. Then the
+operatorP :=D−1F Dsatisfies
+(Pf)(u) =
+Z 1
+0
+P(u,v)f(v)dv,
+where
+P(u,v) := F(u,v)δ(v)
+δ(u) .
+Proof.Using the properties of linear and diagonal operators, we obtain
+(Pf)(u) = (D−1F Df)(u) = 1
+δ(u)
+Z 1
+0
+F(u,v)δ(v)f(v)dv=
+Z 1
+0
+P(u,v)f(v)dv.
+□
+We now have the necessary results to prove Proposition 2.1.
+
+9
+Proof of Proposition 2.1.From Lemma 3.1 we know thatF T has an eigenfunctionδsuch that
+ess infu∈[0,1]δ(u)>0 andF Tδ=ρ(F T )δ=ρ(F)δ. SinceF T acts onL ∞([0,1]) we also know
+that ess supu∈[0,1]δ(u)<∞. By Lemma 3.2 applied toF T , the kernel function associated withP
+satisfiesP(u,v) = F(v,u)δ(v)
+δ(u) . Putting this together, it follows that for anyu∈[0,1],
+Z 1
+0
+P(u,v)dv= 1
+δ(u)
+Z 1
+0
+F(v,u)δ(v)dv= 1
+δ(u) (FTδ)(u) = 1
+δ(u)ρ(F)δ(u) =ρ(F)<1.
+To prove the bound on the norm of eP, we show that eP=P T . Indeed, it is clear that ePhas kernel
+eP(u,v) = F(u,v)δ(u)
+δ(v) and so
+(ePf)(u) =
+Z 1
+0
+F(u,v)δ(u)
+δ(v) f(v)dv=
+Z 1
+0
+P(v,u)f(v)dv= (P Tf)(u).
+Using (2.7) we see that
+Z 1
+0
+eP(u,v)du=
+Z 1
+0
+P(u,v)dv=ρ(F)<1.
+Finally, note that since ePis positive,
+∥eP∥op = sup
+v∈[0,1]
+Z 1
+0
+|eP(u,v)|du= sup
+v∈[0,1]
+Z 1
+0
+eP(u,v)du=ρ(F).
+This completes the proof.□
+4.Proof of Existence and Uniqueness of the Reflection Map
+In this section, we will introduce necessary results to prove Theorem 2.1, utilizing the property
+that the diagonalized system has an operator ePsuch that∥ eP∥op <1. This avoids any work
+involvingk-fold composition that was required in the methodology of [5], for which we only knew
+that∥F (k)∥op <1 for somek≥1. For ease of notation in this section, the lemmas are proved
+forF∈ eR, although it should be understood that for the proof of Theorem 2.1 these lemmas will
+apply to the operator eP∈ eRof the diagonalized system.
+Before proving Theorem 2.1 we first introduce the mappingπ X,F which acts as a cumulative
+correction term for candidate regulatorsY∈D ↑
+T (L1).
+Definition 4.1.For a givenX∈D T (L1)andF∈R, define the mappingπ X,F :D↑
+T (L1)→D ↑
+T (L1)
+by
+πX,F (W)(t) = sup
+0≤s≤t
+[−X(s) +FW(s)] +.(4.1)
+More specifically, for eachu∈[0,1],
+πX,F (W)u(t) = sup
+0≤s≤t
+[−Xu(s) + (FW)u(s)]+.(4.2)
+Lemma 4.1.For anyF∈ eRandX∈D T (L1),π X,F is a contraction mapping onD ↑
+T (L1). That
+is, for anyY 1,Y 2∈D↑
+T ,
+∥πX,F (Y 1)−π X,F (Y 2)∥T,1≤∥F∥ op∥Y 1−Y 2∥T,1
+where∥F∥ op<1.
+
+10
+Proof.The proof is given as follows:
+∥πX,F (Y 1)−π X,F (Y 2)∥T,1 =
+Z 1
+0
+sup
+t∈[0,T]
+|πX,F (Y 1)u(t)−π X,F (Y 2)u(t)|du
+≤
+Z 1
+0
+sup
+t∈[0,T]
+sup
+s∈[0,t]
+|(F(Y 1−Y 2))u(s)|du
+=
+Z 1
+0
+sup
+t∈[0,T]
+|(F(Y 1−Y 2))u(t)|du
+=∥F(Y 1)−F(Y 2)∥T,1
+≤∥F∥ op∥Y 1−Y 2∥T,1,
+where we use (1.9) in the second line.□
+Remark 4.1.In the finite-dimensional setting, the above result can be proved similarly, see[8,
+Theorem 1]. In finite-dimension, this is sufficient to show that a unique fixed point exists where
+uniqueness means for everyt∈[0,T]and everyi= 1,...N, where the function space isD N
+T . This
+will not work here since in our case, uniqueness in the function spaceD T (L1)under the metric
+∥·∥ T,1 does not imply uniqueness for allt∈[0,T], but only uniqueness for almost everyu∈[0,1].
+This is not sufficient to prove uniqueness of the system(2.1)–(2.3), which holds for allu∈[0,1].
+We therefore require a result which improves upon almost everywhere uniqueness to everywhere.
+This is presented in the next lemma.
+Lemma 4.2.For anyF∈ eRandX∈D T (L1),π X,F has a unique fixed point. That is, there
+exists a uniqueY∈D T (L1)such thatY=π X,F (Y), where uniqueness holds for everyu∈[0,1]
+andt∈[0,T].
+Proof.Applying the Banach fixed point theorem to Lemma 4.1, there exists a uniqueY∈D T (L1)
+with respect to the norm∥·∥ T,1 such thatY u =π X,F (Y)u for a.e.u∈[0,1]. Let eY:=π X,F (Y).
+Then eYu =Y u for a.e.u∈[0,1]. Hence,π X,F (eY)u =π X,F (Y)u for everyu∈[0,1]. Therefore,
+eY=π X,F (eY), namely eYis a fixed point ofπ X,F .
+Now suppose bYis also a fixed point ofπ X,F . By uniqueness ofY, we must have bYu =Y u for a.e.
+u∈[0,1]. Hence,π X,F (bY)u =π X,F (Y)u for everyu∈[0,1]. Therefore, bY=π X,F (bY) =π X,F (Y) =
+eY. This means eYis the unique fixed point ofπ X,F .□
+We now have the necessary results to prove existence and uniqueness of the solution to the infinite-
+dimensional Skorokhod problem. The following proof is adapted from [8] and further developed for
+the infinite-dimensional case.
+Proof of Theorem 2.1.By using the diagonalized system from Definition 2.1 where eP∈ eRas
+guaranteed by Proposition 2.1, we can consider the system (2.4)–(2.6). By proving existence and
+uniqueness of eYand eZfor a given free process eX :=DXand operator eP, we can recover the
+original theorem takingY :=D−1eYandZ :=D−1eZ.
+We first prove existence by showing that a solution to (2.4)–(2.6) is given by the unique fixed point
+eY=π eX, eP (eY) guaranteed by Lemma 4.2 and then correspondingly, eZ(t) = eX(t) + (1− eP)eY(t).
+Let eYbe the fixed point. Condition (2.4) is satisfied since
+eZ(t) = eX(t)− ePeY(t) + eY(t)
+= eX(t)− ePeY(t) + sup
+0≤s≤t
+[−eX(s) + ePeY(s)] +≥0.
+
+11
+Condition (2.5) is also satisfied since clearlydπ eX, eP (eY)(t)≥0 and eY(0) = [− eX(0) + ePeY(0)] +
+is satisfied when eY(0) = 0. Sinceπ eX, eP :D↑
+0(L1)→D ↑
+0(L1) is a contraction map (takingT= 0 in
+Lemma 4.1), the uniqueness of eY(0) guarantees that eY(0) = 0.
+Finally, to see (2.6), we can check both cases. For eachu∈[0,1], ifd eYu(t)>0, the supremum
+inπ( eY)u(t) must be attained attand so eZu(t) = eXu(t)−( ePeY)u(t) + [−eXu(t) + (ePeY)u(t)] = 0.
+Alternatively, if eZu(t)>0, then eX(t)− ePeY(t) + sup 0≤s≤t[−eX(s) + ePeY(s)] + >0 and so the
+supremum inπ eX, eP (eY)u(t) can not be attained att; therefored eYu(t) = 0.
+We next show that the fixed point eY=π eX, eP (eY) and eZ(t) = eX(t) + (1− eP)eY(t) is the only
+solution to (2.4)–(2.6), proving uniqueness. To see this, first take any ( ¯Y, ¯Z) that satisfies (2.4)–
+(2.6), and write ˆY=π eX, eP ( ¯Y). We will show that ˆY= ¯Y. Note first that ˆY≤ ¯Y. To see this, note
+that conditions (2.4) and (2.5) imply that for allu∈[0,1],t∈[0,T],
+¯Yu(t)≥[− eXu(t) + (eP ¯Y)u(t)]+.
+For any fixedtandϵ>0,∃t ∗∈[0,t] such that
+[−eXu(t∗) + (eP ¯Y)u(t∗)]+ +ϵ≥sup
+0≤s≤t
+[−eXu(s) + (eP ¯Y)u(s))]+.
+Sinced ¯Y(t)≥0, we have
+¯Yu(t)≥ ¯Yu(t∗)≥[− eXu(t∗) + (eP ¯Y)u(t∗)]+
+≥sup
+0≤s≤t
+[−eXu(s) + (eP ¯Y)u(s))]+−ϵ= ˆYu(t)−ϵ.
+Lettingϵ→0 yields ˆYu(t)≤ ¯Yu(t).
+We next show that ˆY= ¯Y, implying uniqueness of ¯Y. If not, since ¯Y(0) = 0 = ˆY(0), there must
+existu∈[0,1],t 0∈[0,T] such that both ˆYu(t0)< ¯Yu(t0) andd ¯Yu(t0)>0. However, this means
+that ¯Zu(t0)≥ ¯Yu(t0)− ˆYu(t0)>0, contradicting (2.6).□
+Remark 4.2.In this section we have shown that the regulator for the diagonalized system(2.4)–
+(2.6)is given by the unique fixed point ofπ eX, eP . As it turns out, one can also show (cf.[5])
+that the regulator of the original system(2.1)–(2.3)is given by the unique fixed point ofπ X,F , but
+this requires additional theory and is less straightforward than the results presented in this section.
+Specifically, whenFis inRbut not necessarily eR, contraction properties ofπ X,F can only be
+shown via ak-stage contraction argument, wherekis a positive integer such that∥F (k)∥op <1.
+Additionally, for the Lipschitz properties that follow in Section 5, if∥F∥ op = 1the proofs do not
+hold and so more delicate proofs bounding compositions ofFandπ X,F must be taken.
+5.Continuity and Lipschitz Properties
+In the previous section we have demonstrated that given any reflection operatorF∈Rsatisfying
+Assumption 2.1 and free processX∈D T (L1), we can always find a unique solution to the infinite-
+dimensional Skorokhod problem posed by (2.1)–(2.3). In this section we will show that under the
+same assumptions onF, both the regulator Ψ F (X) and the reflected process Φ F (X) are Lipschitz
+in bothXandF. In a similar fashion to the proofs in the previous section, we will again utilize
+the diagonalized system, before reverting back to the original system. It is important to remember
+that when we show these proofs forF∈ eR, we are referring to processes in the diagonalized system
+where the reflection operator has the property that∥F∥ op<1.
+In Section 3 we have shown that Assumption 2.1 allows for diagonalization of the system with
+a dominant eigenfunction whose essential infimum is bounded above zero. In particular, for the
+
+12
+diagonalized system eP=DF D −1, we have that∥ eP∥op =ρ(F)<1. Furthermore, Lemma 3.1
+states that
+0< ∥D∥op
+∥D−1∥op
+<∞,
+which allows for the return to the original system without any issues regarding boundedness. This
+will be crucial in proving the Lipschitz properties in this section.
+5.1.Lipschitz continuity in the uniform norm.We prove results on Lipschitz continuity in
+the uniform norm∥·∥ T,1 established in (1.3) in this subsection.
+In Lemma 4.2 we have shown that forF∈ eR,π X,F has a unique fixed point. In the next lemma
+we show that we can reach this fixed point by iteratingπ X,F on any input processW∈D ↑
+T (L1).
+Lemma 5.1.TakeF∈ eRandX∈D T (L1). Then for anyW∈D ↑
+T (L1),
+∥πn
+X,F (W)−Ψ F (X)∥T,1→0asn→∞.
+Proof.TakeW 1,W 2∈D↑
+T (L1). Applying Lemma 4.1 iteratively gives
+∥πn
+X,F (W 1)−π n
+X,F (W 2)∥T,1≤∥F∥ n
+op∥W 1−W 2∥T,1.
+Next, letW 2 be the unique fixed point ofπ X,F guaranteed by Lemma 4.2, soW 2 =π X,F (W 2) =
+ΨF (X). As∥F∥ op<1, the result follows immediately.□
+In the next theorem we show that given a fixed reflection operatorF∈R, Ψ F (X) and ΦF (X)
+are both Lipschitz inX.
+Theorem 5.1.TakeX 1∈D T (L1)andX 2∈D T (L1). Let(Φ F (X1),ΨF (X1))and(Φ F (X2),ΨF (X2))
+be the corresponding reflected processes and regulators associated with operatorF∈Rsatisfying
+Assumption 2.1. LetDbe a strictly positive diagonal operator such that∥DF D −1∥op =γ <1.
+Then the regulator and reflected process maps of the original process are Lipschitz in the free process,
+satisfying
+∥ΨF (X1)−Ψ F (X2)∥T,1≤ δsup
+δinf(1−γ) ∥X1−X 2∥T,1,
+∥ΦF (X1)−Φ F (X2)∥T,1≤ δsup
+δinf
+
+1 + 2
+1−γ
+
+∥X1−X 2∥T,1,
+whereδ sup =∥D∥ op andδ −1
+inf =∥D−1∥op.
+Proof.Consider the diagonalized processes eXi :=DX i, fori= 1,2, with operator eP=DF D −1
+where eP∈ eRand∥ eP∥op =γ <1. Denote Φ eP (eXi) = eZi and Ψ eP (eXi) = eYi the reflected process
+and the regulator corresponding to eP, respectively.
+LeteYi,0 = 0 andeYi,n+1 =π eX i, eP (eYi,n) forn≥0,i= 1,2. Then, using (1.9) in the first inequality,
+we obtain
+∥eY 1,n+1−eY 2,n+1∥T,1
+=∥π 1(eY 1,n)−π 2(eY 2,n)∥T,1
+=
+Z 1
+0
+sup
+0≤t≤T
+ sup
+0≤s≤t
+[−eX1
+u(s) + (ePeY 1,n)u(s)]+−sup
+0≤s≤t
+[−eX2
+u(s) + (ePeY 2,n)u(s)]+
+du
+≤
+Z 1
+0
+sup
+0≤t≤T
+[−eX1
+u(t) + (ePeY 1,n)u(t)]+−[− eX2
+u(t) + (ePeY 2,n)u(t)]+
+du
+≤
+Z 1
+0
+sup
+0≤t≤T
+−(eX1
+u(t)− eX2
+u(t)) + ((ePeY 1,n)u(t)−( ePeY 2,n)u(t))
+du
+
+13
+≤
+Z 1
+0
+sup
+0≤t≤T
+eX1
+u(t)− eX2
+u(t)
+du+
+Z 1
+0
+sup
+0≤t≤T
+eP(eY 1,n−eY 2,n)u(t)
+du
+≤∥ eX1− eX2∥T,1 +γ∥ eY 1,n−eY 2,n∥T,1
+where the last inequality follows from the proof of Lemma 4.1.
+Applying the reverse triangle inequality, we get
+∥eY 1,n−eY 2,n∥T,1−∥Ψ eP (eX1)−Ψ eP (eX2)∥T,1
+≤∥ eY 1,n−Ψ eP (eX1)∥T,1 +∥Ψ eP (eX2)− eY 2,n∥T,1,
+and so applying Lemma 5.1 yields
+∥eY 1,n−eY 2,n∥T,1→∥Ψ eP (eX1)−Ψ eP (eX2)∥T,1.
+Lettingn→∞and rearranging, we get
+∥Ψ eP (eX1)−Ψ eP (eX2)∥T,1≤ 1
+1−γ ∥eX1− eX2∥T,1.
+Using (2.4) and the fact that∥1− eP∥op≤2, we obtain
+∥Φ eP (eX1)−Φ eP (eX2)∥T,1≤∥ eX1− eX2∥T,1 +∥1− eP∥op∥Ψ eP (eX1)−Ψ eP (eX2)∥T,1
+≤
+
+1 + 2
+1−γ
+
+∥eX1− eX2∥T,1.
+For the correspondingX 1 andX 2 relating back to the original operatorF, we have the relation
+ΨF (Xi) =Y i =D−1eYi =D−1Ψ eP (eXi) =D−1Ψ eP (DXi), i= 1,2,
+and similarly ΦF (Xi) =D−1Φ eP (DXi).
+Then we obtain
+∥ΨF (X1)−Ψ F (X2)∥T,1 =∥D−1Ψ eP (DX 1)−D −1Ψ eP (DX 2)∥T,1
+≤ 1
+δinf
+∥Ψ eP (DX 1)−Ψ eP (DX 2)∥T,1
+≤ 1
+δinf(1−γ) ∥DX 1−DX 2∥T,1
+≤ δsup
+δinf(1−γ) ∥X1−X 2∥T,1,
+and similarly,
+∥ΦF (X1)−Φ F (X2)∥T,1≤ 1
+δinf
+∥Φ eP (DX 1)−Φ eP (DX 2)∥T,1
+≤ δsup
+δinf
+
+1 + 2
+1−γ
+
+∥X1−X 2∥T,1.□
+Remark 5.1.If the system has already been diagonalized, i.e.,F∈ eR, then the results of Theorem
+5.1 hold withδ inf =δ sup = 1.
+We now show in the next lemma that for fixedX∈ D T (L1), ΨF (X) and Φ F (X) are both
+Lipschitz inF∈ eR.
+Lemma 5.2.LetF 1 andF 2 be two operators in eRsatisfying∥F 1∥op =γ 1<1and∥F 2∥op =γ 2<
+1. Then for anyX∈D T (L1)and alln≥1,
+
+14
+(i)
+∥ΨFi(X)∥T,1≤∥X∥T,1
+1−γ i
+,(5.1)
+(ii)
+∥ΨF1(X)−Ψ F2(X)∥T,1≤∥F 1−F 2∥op∥X∥T,1
+(1−γ 1)(1−γ 2) .(5.2)
+Proof.We begin by writingY i,0 = 0 andY i,n+1 =π X,Fi(Yi,n),i= 1,2.
+(i) Note that
+∥Yi,n+1∥T,1 =∥π X,Fi(Yi,n)∥T,1
+=
+
+ sup
+0≤t≤T
+ sup
+0≤s≤t
+[−X(s) +F iYi,n(s)]+
+
+
+1
+≤
+
+ sup
+0≤t≤T
+−X(t) +F iYi,n(t)
+
+
+1
+≤∥X∥ T,1 +∥F i∥op∥Yi,n∥T,1.
+Using the reverse triangle inequality,
+∥Yi,n∥T,1−∥ΨFi(X)∥T,1
+≤∥Y i,n−ΨFi(X)∥T,1, and
+so applying Lemma 5.1 yields∥Y i,n∥T,1→∥Ψ Fi(X)∥T,1, and so takingn→∞in the above
+we have
+∥ΨFi(X)∥T,1≤∥X∥ T,1 +γi∥ΨFi(X)∥T,1.
+Finally, sinceγ i<1, rearranging gives the result.
+(ii) Using the iteration formula and applying (1.9) in the first inequality, we have
+∥Y 1,n+1−Y 2,n+1∥T,1 =∥π X,F1(Y 1,n)−π X,F2(Y 2,n)∥T,1
+=
+
+ sup
+0≤t≤T
+ sup
+0≤s≤t
+[−X(s) +F 1Y 1,n(s)]+−sup
+0≤s≤t
+[−X(s) +F 2Y 2,n(s)]+
+
+
+1
+≤
+
+ sup
+0≤t≤T
+[−X(t) +F 1Y 1,n(t)]+−[−X(t) +F 2Y 2,n(t)]+
+
+1
+≤
+
+ sup
+0≤t≤T
+F 1Y 1,n(t)−F 2Y 2,n(t)
+
+
+1
+≤∥F 1Y 1,n−F 2Y 1,n∥T,1 +∥F 2Y 1,n−F 2Y 2,n∥T,1
+≤∥F 1−F 2∥op∥Y 1,n∥T,1 +∥F 2∥op∥Y 1,n−Y 2,n∥T,1.
+Again applying the reverse triangle inequality, we obtain
+∥Y 1,n−Y 2,n∥T,1−∥ΨF1(X)−Ψ F2(X)∥T,1
+≤∥Y 1,n−ΨF1(X)∥T,1 +∥ΨF2(X)−Y 2,n∥T,1,
+and so applying Lemma 5.1 yields∥Y 1,n−Y 2,n∥T,1→∥Ψ F1(X)−ΨF2(X)∥T,1, and so taking
+n→∞in the above we have
+∥ΨF1(X)−Ψ F2(X)∥T,1≤∥F 1−F 2∥op∥ΨF1(X)∥T,1 +γ 2∥ΨF1(X)−Ψ F2(X)∥T,1.
+Finally, noting thatγ 2<1, apply part (i) and rearrange for the result.□
+We now have the necessary results to show that the original process exhibits Lipschitz-like
+conditions in bothFandXcombined. However, since we have proved the above two results for
+the diagonalized system, in bringing the original processes back we introduce the necessary terms
+involving the specific diagonal operators for each process. While this may initially seem messy, in
+the results following this theorem we show that as long as the reflection operators are close enough
+
+15
+in the∥·∥ op norm, we can in fact choose a common diagonal operator for the diagonalized processes,
+resulting in the corresponding Lipschitz results.
+Theorem 5.2.TakeX 1∈D T (L1)andX 2∈D T (L1). Let(Φ F1(X1),ΨF1(X1))and(Φ F2(X2),ΨF2(X2))
+be the corresponding reflected processes and regulators associated with operatorsF 1 ∈ Rand
+F 2∈Rboth satisfying Assumption 2.1. LetD 1,D 2 be strictly positive diagonal operators such
+that∥D iFiD−1
+i ∥op =γ i <1,∥D i∥op =δ +
+i , and∥D −1
+i ∥op =δ −
+i ,i= 1,2, and writeβ 2 :=
+1 +∥D−1
+2 ∥op∥D2∥op. Then the following holds:
+(i)
+∥ΨF2(X2)−Ψ F1(X1)∥T,1
+≤ δ−
+2δ+
+2
+1−γ 2
+∥X2−X 1∥T,1
++ δ−
+2δ+
+2δ−
+1δ+
+1∥X1∥T,1
+(1−γ 1)(1−γ 2) ∥F 2−F 1∥op
++
+δ−
+2∥X1∥T,1
+1−γ 2
++ δ−
+2δ−
+1δ+
+1∥F 1∥op∥X1∥T,1
+(1−γ 1)(1−γ 2)
+
+∥D2−D 1∥op
++
+δ+
+1∥X1∥T,1
+1−γ 1
++ δ−
+2δ+
+2δ+
+1∥F 2∥op∥X1∥T,1
+(1−γ 1)(1−γ 2)
+
+∥D−1
+2 −D−1
+1 ∥op ;
+(5.3)
+(ii)
+∥ΦF2(X2)−Φ F1(X1)∥T,1
+≤
+
+1 +β2δ−
+2δ+
+2
+1−γ 2
+
+∥X2−X 1∥T,1
++
+β2δ−
+2δ+
+2δ−
+1δ+
+1∥X1∥T,1
+(1−γ 1)(1−γ 2) + δ−
+1δ+
+1∥X1∥T,1
+1−γ 1
+
+∥F 2−F 1∥op
++β 2
+δ−
+2∥X1∥T,1
+1−γ 2
++ δ−
+2δ−
+1δ+
+1∥F 1∥op∥X1∥T,1
+(1−γ 1)(1−γ 2)
+
+∥D2−D 1∥op
++β 2
+δ+
+1∥X1∥T,1
+1−γ 1
++ δ−
+2δ+
+2δ+
+1∥F 2∥op∥X1∥T,1
+(1−γ 1)(1−γ 2)
+
+∥D−1
+2 −D−1
+1 ∥op.
+(5.4)
+Proof.Consider the diagonalized systems using operators eP 1 =D 1F 1D−1
+1 and eP 2 =D 2F 2D−1
+2
+whereD 1,D 2 are positive multiplication operators with∥ eP 1∥op =γ <1 and∥ eP 2∥op =γ 2 <1.
+Further let eX1 =D 1X1 and eX2 =D 2X2.
+Applying Lemma 5.2 and Theorem 5.1 (in particular Remark 5.1) to the diagonalized process,
+we obtain
+∥Ψ eP2
+(eX2)−Ψ eP1
+(eX1)∥T,1≤∥Ψ eP2
+(eX2)−Ψ eP2
+(eX1)∥T,1 +∥Ψ eP2
+(eX1)−Ψ eP1
+(eX1)∥T,1
+≤ 1
+1−γ 2
+∥eX2− eX1∥T,1 + ∥eX1∥T,1
+(1−γ 1)(1−γ 2)∥eP 2− eP 1∥op.
+Using the relations ΨFi(Xj) =D−1
+i Ψ ePi
+(DiXj) and ΦF (X) =D −1Φ eP (DX) results in
+∥ΨF2(X2)−Ψ F1(X1)∥T,1 =∥D−1
+2 Ψ eP2
+(D2X2)−D −1
+1 Ψ eP1
+(D1X1)∥T,1
+≤∥D−1
+2 Ψ eP2
+(D2X2)−D −1
+2 Ψ eP1
+(D1X1)∥T,1
++∥D−1
+2 Ψ eP1
+(D1X1)−D −1
+1 Ψ eP1
+(D1X1)∥T,1
+≤∥D−1
+2 ∥op∥Ψ eP2
+(D2X2)−Ψ eP1
+(D1X1)∥T,1
+
+16
++∥D−1
+2 −D−1
+1 ∥op∥Ψ eP1
+(D1X1)∥T,1
+≤∥D−1
+2 ∥op
+1−γ 2
+∥D2X2−D 1X1∥T,1
++∥D−1
+2 ∥op∥D1X1∥T,1
+(1−γ 1)(1−γ 2) ∥eP 2− eP 1∥op
++∥D−1
+2 −D−1
+1 ∥op∥Ψ eP1
+(D1X1)∥T,1.
+For the first part, we have
+∥D−1
+2 ∥op
+1−γ 2
+∥D2X2−D 1X1∥T,1 =∥D−1
+2 ∥op
+1−γ 2
+∥D2X2−D 2X1 +D 2X1−D 1X1∥T,1
+≤∥D−1
+2 ∥op∥D2∥op
+1−γ 2
+∥X2−X 1∥T,1
++∥D−1
+2 ∥op∥X1∥T,1
+1−γ 2
+∥D2−D 1∥op.
+For the second part, writingD 2F 2D−1
+2 −D1F 1D−1
+1 = (D2F 2D−1
+2 −D2F 2D−1
+1 )+(D 2F 2D−1
+1 −
+D2F 1D−1
+1 ) + (D2F 1D−1
+1 −D 1F 1D−1
+1 ), we have
+∥D−1
+2 ∥op∥D1X1∥T,1
+(1−γ 1)(1−γ 2) ∥eP 2− eP 1∥op
+≤∥D−1
+2 ∥op∥D1∥op∥X1∥T,1
+(1−γ 1)(1−γ 2) ∥D2F 2D−1
+2 −D 1F 1D−1
+1 ∥op
+≤∥D−1
+2 ∥op∥D1∥op∥X1∥T,1
+(1−γ 1)(1−γ 2)
+
+∥D2F 2D−1
+2 −D 2F 2D−1
+1 ∥op
++∥D 2F 2D−1
+1 −D 2F 1D−1
+1 ∥op +∥D 2F 1D−1
+1 −D 1F 1D−1
+1 ∥op
+
+≤∥D−1
+2 ∥op∥D2∥op∥D1∥op∥F 2∥op∥X1∥T,1
+(1−γ 1)(1−γ 2) ∥D−1
+2 −D−1
+1 ∥op
++∥D−1
+2 ∥op∥D2∥op∥D−1
+1 ∥op∥D1∥op∥X1∥T,1
+(1−γ 1)(1−γ 2) ∥F 2−F 1∥op
++∥D−1
+2 ∥op∥D−1
+1 ∥op∥D1∥op∥F 1∥op∥X1∥T,1
+(1−γ 1)(1−γ 2) ∥D2−D 1∥op.
+For the third part, using (5.1) for the diagonalized system in the first inequality, we have
+∥D−1
+2 −D−1
+1 ∥op∥Ψ eP1
+(D1X1)∥T,1≤∥D−1
+2 −D−1
+1 ∥op
+∥D1X1∥T,1
+1−γ 1
+≤∥D1∥op∥X1∥T,1
+1−γ 1
+∥D−1
+2 −D−1
+1 ∥op.
+Putting all of these together proves (i).
+To show (ii), using the relations
+ΦF1(X1) =X 1 + (1−F 1)ΨF1(X1) andΦ F2(X2) =X 2 + (1−F 2)ΨF2(X2),
+we have
+ΦF2(X2)−Φ F1(X1) = (X2−X 1) + (1−F 2)(ΨF2(X2)−Ψ F1(X1)) + (F2−F 1)ΨF1(X1).
+
+17
+Note that∥F 2∥op≤∥D−1
+2 ∥op∥D2∥op∥eP 2∥and so∥1−F 2∥op≤1 +∥D −1
+2 ∥op∥D2∥op =:β2. Taking
+the norm and using (5.1) gives
+∥ΦF2(X2)−Φ F1(X1)∥T,1
+≤∥X 2−X 1∥T,1 +∥1−F 2∥op∥ΨF2(X2)−Ψ F1(X1)∥T,1 +∥F 2−F 1∥op∥ΨF1(X1)∥T,1
+≤∥X 2−X 1∥T,1 +β 2∥ΨF2(X2)−Ψ F1(X1)∥T,1 +∥F 2−F 1∥op∥D−1
+1 Ψ eP1
+(D1X1)∥T,1
+≤∥X 2−X 1∥T,1 +β 2∥ΨF2(X2)−Ψ F1(X1)∥T,1 +∥D−1
+1 ∥op∥D1∥op∥X1∥T,1
+1−γ 1
+∥F 2−F 1∥op.
+Finally, applying (5.3) results in (ii).□
+Remark 5.2.In cases whereFis motivated by certain constraints, such as the infinite-dimensional
+analogue of the routing matrix of an open Jackson network, it is common to impose that∥F∥ op≤1.
+In this case, we have that∥1−F∥ op≤2. This simplifies the above theorem by replacingβ 2 with2
+in(5.4). This is the case that we assume in our previous work[5].
+For any operatorF∈R, as guaranteed in Proposition 2.1 we can always find a diagonal operator
+Dsuch that∥DF D −1∥op<1. However, to obtain Lipschitz results that do not involve differences
+between these diagonal operators, it is more desirable to diagonalize processes with the same
+diagonal operator. The next lemma states that this is possible as long as the original operators are
+close enough to each other.
+Lemma 5.3.Suppose thatF 1 andF 2 are operators inRwith digaonal operatorD 1 such that
+∥D1F 1D−1
+1 ∥op =γ 1<1. Then if
+∥F 2−F 1∥op< 1−γ 1
+∥D1∥op∥D−1
+1 ∥op
+,(5.5)
+then we also have∥D 1F 2D−1
+1 ∥op<1.
+Proof.The claim follows from the triangle inequality:
+∥D1F 2D−1
+1 ∥op≤∥D 1F 1D−1
+1 ∥op +∥D 1(F 2−F 1)D−1
+1 ∥op
+≤γ 1 +∥D 1∥op∥F 2−F 1∥op∥D−1
+1 ∥op.
+Hence, if∥F 2−F 1∥op< 1−γ1
+∥D1∥op∥D−1
+1 ∥op
+, then∥D 1F 2D−1
+1 ∥op<1 as required.□
+Remark 5.3.Under Assumption 2.1, ifD 1 is the diagonal matrix associated withF 1 from Propo-
+sition 2.1 (the dominant right eigenfunction ofF T ), then both∥D 1∥op and∥D−1
+1 ∥op are finite and
+so there will always be a nontrivial region of operators that satisfy the required inequality in Lemma
+5.3. In this way, Lemma 5.3 states that for two reflection operators close enough to each other,
+one can use the diagonal operator associated with the other, for example, the one guaranteed by
+Proposition 2.1. While this shows that a diagonal operatorDassociated with a reflection operator
+Fis not unique, it turns out that diagonalization using the dominant eigenfunction provides the
+smallest possible value of∥DF D −1∥op.
+The above lemma motivates a modification of Theorem 5.2 that removes the last two terms of
+(5.3) and (5.4) allowing for Lipschitz continuity in both the free process and reflection operator.
+Theorem 5.3.TakeX 1∈D T (L1)andX 2∈D T (L1). Let(Φ F1(X1),ΨF1(X1))and(Φ F2(X2),ΨF2(X2))
+be the corresponding reflected processes and regulators associated with operatorsF1∈RandF 2∈R
+both satisfying Assumption 2.1. LetDbe a positive diagonal operator such that∥DF 1D−1∥op =
+γ1 <1and∥DF 2D−1∥op =γ 2, and letκ :=∥D −1∥op∥D∥op. Then if(5.5)holds, thenγ :=
+max(γ1,γ 2)<1and the following holds:
+
+18
+(i)
+∥ΨF2(X2)−Ψ F1(X1)∥T,1≤ κ
+1−γ ∥X2−X 1∥T,1
++ κ2∥X1∥T,1
+(1−γ) 2 ∥F 2−F 1∥op,
+(5.6)
+(ii)
+∥ΦF2(X2)−Φ F1(X1)∥T,1≤
+
+1 + (1 +κ)κ
+1−γ 1
+
+∥X2−X 1∥T,1
++
+(1 +κ)κ 2∥X1∥T,1
+(1−γ 1)2 + κ∥X1∥T,1
+1−γ 1
+
+∥F 2−F 1∥op.
+(5.7)
+Proof.γ 2<1 follows from Lemma 5.3. Applying this to Theorem 5.2 completes the proof.□
+In Theorem 5.2 we have shown that given any free processesX1 andX 2 inD T (L1), and reflection
+operatorsF 1,F 2 inRwith respective diagonal operatorsD 1 andD 2, both the regulator and
+reflection maps have Lipschitz-like properties, with the addition of terms involving the distance
+betweenD 1 andD 2. Theorem 5.3 eliminates these terms by showing that forF 1 andF 2 close
+enough we can choose a common diagonal operator. We now extend these two ideas to a sequence of
+reflection operators{F n}n≥1∈Rconverging to someF∈R. With the aid of the following lemma,
+we will show in Theorem 5.4 that for sufficiently largen, the regulator and reflected processes will
+be Lipschitz in both the free process and the reflection operator.
+Lemma 5.4.TakeF∈Rsatisfying Assumption 2.1 and letDbe a positive multiplication operator
+such that∥DF D −1∥op =γ <1as in Proposition 2.1. Consider a sequence{F n}n≥1∈Rsuch
+that∥F n−F∥ op→0asn→∞. Then
+∥DFnD−1∥op =:γn→γasn→∞.
+In particular, for sufficiently largen,
+γn<1.
+Proof.The first claim follows from the argument below:
+∥DFnD−1∥op−∥DF D−1∥op
+≤∥D(F n−F)D −1∥op
+≤∥D∥ op∥Fn−F∥ op∥D−1∥op,
+and hence∥DF nD−1∥op → ∥DF D−1∥op =γasn→ ∞. The second claim is subsequently
+immediate. □
+Theorem 5.4.TakeX∈D T (L1)and let{X n}n≥1 be a sequence inD T (L1). Let(Φ F (X),ΨF (X))
+and({Φ Fn(Xn)}n≥1,{ΨFn(Xn)}n≥1)be the corresponding reflected processes and regulators associ-
+ated with operatorsF∈Rand{F n}n≥1∈Rsatisfying Assumption 2.1 respectively. LetDbe the
+positive diagonal operator associated with the diagonalized process ofFand letκ :=∥D−1∥op∥D∥op.
+If∥F n−F∥ op→0, then for someˆγ∈(0,1)and sufficiently largen,
+(i)
+∥ΨFn(Xn)−Ψ F (X)∥T,1≤ κ
+1−ˆγ∥Xn−X∥ T,1 + κ2∥X∥T,1
+(1−ˆγ)2∥Fn−F∥ op,(5.8)
+
+19
+(ii)
+∥ΦFn(Xn)−Φ F (X)∥T,1≤
+
+1 + (1 +κ)κ
+1−ˆγ
+
+∥Xn−X∥ T,1
++κ
+(1 +κ)κ
+(1−ˆγ)2 + 1
+1−ˆγ
+
+∥X∥T,1∥Fn−F∥ op.
+(5.9)
+In particular, if∥X n−X∥ T,1→0asn→∞, then
+∥ΨFn(Xn)−Ψ F (X)∥T,1→0and∥Φ Fn(Xn)−Φ F (X)∥T,1→0.(5.10)
+Proof.Consider the diagonalized systems using operators eP=DF D −1 and ePn =DF nD−1 where
+Dis a positive multiplication operator with∥ eP∥op =γ <1 and∥ ePn∥op =γ n <1 for sufficiently
+largen, sayn≥Nby Lemma 5.4. We also note that sup n≥Nγn <1 sinceγ n→γasn→∞.
+Let ˆγ= max(γ,supn≥Nγn). Finally, noticing that 1
+1−γ≤ 1
+1−ˆγand 1
+1−γn≤ 1
+1−ˆγforn≥N, we can
+apply Theorem 5.2 for the result.□
+Remark 5.4.Theorem 5.4 shows convergence of systems where both the free process and the re-
+flection operator converge, stating that the regulator and reflected process will also converge. This
+is particularly useful when dealing with convergence from a finite to an infinite-dimensional system,
+where the finite-dimensional system can be represented by blockwise-constant processes and opera-
+tors. This is the case in our previous work[5]. Because the continuity is Lipschitz in both the free
+process and the reflection operator, if one can show that both of these converge at a particular rate,
+then one can also derive rates of convergence for the regulator and reflection map.
+5.2.Lipschitz Continuity in theJ 1 topology.While the uniform metric∥·∥ T,1 provides a suit-
+able framework for establishing existence, uniqueness, and Lipschitz continuity of the Skorokhod
+map, in many cases it may be too restrictive when considering convergence of c` adl` ag processes. In
+many applications (such as queueing and stochastic networks, chemical reaction networks, biolog-
+ical and population systems), one is interested in sequences of processes whose jump magnitudes
+converge, but whose jump times may exhibit small perturbations. The uniform topology does not
+accommodate for such cases, whereas the SkorokhodJ 1 topology is specifically designed to identify
+paths that are close up to a small deformation of the time parameter. Hence, we establish analogues
+of the Lipschitz continuity properties in Section 5.1 under a Skorokhod-type topology adapted to
+the present infinite-dimensional setting.
+Let Λ : [0,T]→[0,T] be the space of all increasing and onto right-continuous functions. For
+a slight abuse of notation, whenf∈ D T (L1) andλ∈Λ we define the compositionf◦λby
+(f◦λ) u(t) =f u(λ(t)) for eachu∈[0,1]. Define the metric
+dT,J 1(f,g) = inf
+λ∈Λ
+n
+∥f◦λ−g∥ T,1∨sup
+0≤t≤T
+|λ(t)−t|
+o
+.(5.11)
+Before proceeding, we first present a proposition that provides solutions to the infinite-dimesional
+Skorokhod problem under rescaling.
+Proposition 5.1(Rescaling property of the reflection map).Take anyX∈D T (L1)andF∈R
+satisfying Assumption 2.1, with anyw∈L 1[0,1],α>0. Letγbe a nondecreasing right-continuous
+map from[0,T ′]to[0,T]. Then
+ΨF (w+α(X◦γ)) =αΨ F (α−1w+X)◦γ(5.12)
+ΦF (w+α(X◦γ)) =αΦ F (α−1w+X)◦γ(5.13)
+Proof.First note thatα −1w+X∈D T (L1). Applying Theorem 2.1, letY= Ψ F (α−1w+X) and
+defineQ= Φ F (α−1w+X). Then
+Q(t) =α−1w+X(t) + (1−F)Y(t),
+
+20
+whereQ u(t)≥0 andQ u(t)dYu(t) = 0 for all (u,t)∈([0,1]×[0,T]). Fort∈[0,T ′], define
+eY(t) =αY(γ(t)),
+eQ(t) =αQ(γ(t)).
+SinceYandγare nondecreasing and right-continuous andα >0, it follows that eYis also
+nondecreasing and right-continuous. Moreover, eY(0) = 0 and eQ(t)≥0 for allt∈[0,T ′].
+Furthermore, asFis a linear operator,
+eQ(t) =α
+ 
+α−1w+X(γ(t)) + (1−F)Y(γ(t))
+
+=w+α(X◦γ)(t) + (1−F) eY(t),.
+Finally, eQu(t)deYu(t) for all (u,t)∈([0,1]×[0,T]), since positive scalar multiplication together
+with composition by a nondecreasing function preserves the complementarity property.
+It is clear by construction thatw+α(X◦γ)∈D T′(L1). Hence, ( eQ,eY) is a solution of the
+Skorokhod problem corresponding to the free processw+α(X◦γ). By uniqueness of solutions to
+the Skorokhod problem guaranteed in Theorem 2.1, this completes the proof.□
+Remark 5.5.While the above proposition holds for any general time rescaling, to proceed with the
+following Lipschitz results we will only apply the case whenw= 0,α= 1, andγ∈Λ. The first
+result, for a shared transition operator, is stated below.
+Theorem 5.5.Under the same conditions as Theorem 5.1,
+dT,J 1(ΨF (X1),ΨF (X2))≤ δsup
+δinf(1−γ) dT,J 1(X1,X 2),
+dT,J 1(ΦF (X1),ΦF (X2))≤ δsup
+δinf
+
+1 + 2
+1−γ
+
+dT,J 1(X1,X 2).
+Proof.Applying Theorem 5.1, we have
+dT,J 1(ΨF (X1),ΨF (X2)) = inf
+λ∈Λ
+n
+∥ΨF (X1)◦λ−Ψ F (X2)∥T,1∨sup
+0≤t≤T
+|λ(t)−t|
+o
+= inf
+λ∈Λ
+n
+∥ΨF (X1◦λ)−Ψ F (X2)∥T,1∨sup
+0≤t≤T
+|λ(t)−t|
+o
+≤inf
+λ∈Λ
+n δsup
+δinf(1−γ) ∥X1◦λ−X 2∥T,1∨sup
+0≤t≤T
+|λ(t)−t|
+o
+≤ δsup
+δinf(1−γ) dT,J 1(X1,X 2).
+The second result follows similarly.□
+Theorem 5.6.Under the same conditions as Theorem 5.4,
+dT,J 1(ΨFn(Xn),ΨF (X))≤ κ
+1−ˆγdT,J 1(Xn,X) + κ2∥X∥T,1
+(1−ˆγ)2∥Fn−F∥ op,
+dT,J 1(ΦFn(Xn),ΦF (X))≤
+
+1 + (1 +κ)κ
+1−ˆγ
+
+dT,J 1(Xn,X)
++κ
+(1 +κ)κ
+(1−ˆγ)2 + 1
+1−ˆγ
+
+∥X∥T,1∥Fn−F∥ op.
+
+21
+Proof.Applying Theorem 5.4 and choosingλ(t)≡tin the second part of the first inequality, we
+have
+dT,J 1(ΨFn(Xn),ΨF (X)) = inf
+λ∈Λ
+n
+∥ΨFn(Xn)◦λ−Ψ F (X)∥T,1∨sup
+0≤t≤T
+|λ(t)−t|
+o
+= inf
+λ∈Λ
+n
+∥ΨFn(Xn◦λ)−Ψ F (X)∥T,1∨sup
+0≤t≤T
+|λ(t)−t|
+o
+≤inf
+λ∈Λ
+n κ
+1−ˆγ∥Xn◦λ−X∥ T,1∨sup
+0≤t≤T
+|λ(t)−t|
+o
++ inf
+λ∈Λ
+nκ2∥X∥T,1
+(1−ˆγ)2∥Fn−F∥ op∨sup
+0≤t≤T
+|λ(t)−t|
+o
+≤ κ
+1−ˆγdT,J 1(Xn,X) + κ2∥X∥T,1
+(1−ˆγ)2∥Fn−F∥ op.
+The second result follows similarly.□
+Remark 5.6.While Proposition 5.1 and Theorems 5.5 and 5.6 imposed Assumption 2.1 on the
+reflection operators, this additional assumption only follows from its use in proving results on
+existence, uniqueness, and Lipschitz continuity via the diagonalization method of this paper. In fact,
+if one instead adopts the approach used in[5], existence, uniqueness, and Lipschitz continuity can
+be shown without Assumption 2.1 required. It therefore follows that Proposition 5.1 and Theorems
+5.5 and 5.6 all hold true without the additional Assumption 2.1.
+AppendixA.Additional Proof
+Proof of Lemma 2.1.We first prove eventual strong positivity. Under the conditions of Lemma 2.1
+there existm∈N,ε> 1
+2, and a densityν >0 a.e. such that
+(FT )(m)(u,v)≥εν(v).
+Letf∈L ∞([0,1]) wheref≥0f >0 on a set of positive measure. Then
+((FT )(m)f)(u) =
+Z 1
+0
+(FT )(m)(u,v)f(v)dv≥ε
+Z 1
+0
+ν(v)f(v)dv.
+Sinceν >0 a.e., we have
+ess inf
+u∈[0,1]
+((FT )(m)f)(u)>0,
+thus satisfying (i) of Assumption 2.1.
+To prove quasi-compactness, first note that for eachu,v, we can write
+(FT )(m)(u,v) =εν(v) +R(u,v),
+where
+R(u,v) := (F T )(m)(u,v)−εν(v)≥0.
+Define the corresponding operatorsKandRacting onL ∞([0,1]) through
+(Kf)(u) :=ε
+Z 1
+0
+ν(v)f(v)dv,(Rf)(u) :=
+Z 1
+0
+R(u,v)f(v)dv.
+It follows that (F T )(m) =K+R. AsKis a rank-one operator, it is hence compact. Moreover, as
+νis a probability density,
+Z 1
+0
+R(u,v)dv=
+Z 1
+0
+(FT )m(u,v)dv−ε
+Z 1
+0
+ν(v)dv≤1−ε,
+
+22
+and soρ ess(R)≤∥R∥ ∞≤1−ϵ. Applying [9, Lemma 4.8], we haveρ ess(F (m))≤1−ϵ. Using
+(2.8) and takingL ∞([0,1])∋f≡1, we have (F T )(m)f≥ϵfand soρ(F (m))≥ϵ. Sinceϵ> 1
+2, we
+thus haveρ ess(F (m))<ρ(F (m)). From [9, Theorem 3.7], we have thatρ ess(F (m)) =ρ ess(F)m and
+sinceρ(F (m)) =ρ(F) m, it follows thatρ ess(F)<ρ(F), thus satisfying (ii) of Assumption 2.1.□
+References
+[1] A. Berman and R. J. Plemmons.Nonnegative Matrices in the Mathematical Sciences. Society for Industrial and
+Applied Mathematics, 1994.
+[2] H. Chen and A. Mandelbaum. Leontief systems, RBV’s and RBM’s.Applied Stochastic Analysis, 1:43, 1991.
+[3] H. Chen and A. Mandelbaum. Hierarchical modeling of stochastic networks, part II: Strong approximations. In
+Stochastic modeling and analysis of manufacturing systems, pages 107–131. Springer, 1994.
+[4] H. Chen and D. D. Yao.Fundamentals of queueing networks: Performance, asymptotics, and optimization.
+Springer, 2001.
+[5] L. T. Clarke, G. Pang, and R. Wu. Growing open Markovian Jackson networks: Fluid limit and infinite-
+dimensional Skorokhod problem.arXiv preprint arXiv:2605.16868, 2026.
+[6] P. Dupuis and H. Ishii. On Lipschitz continuity of the solution mapping to the Skorokhod problem, with appli-
+cations.Stochastics: An International Journal of Probability and Stochastic Processes, 35(1):31–62, 1991.
+[7] J.-P. Haddad, R. R. Mazumdar, and F. J. Piera. Pathwise comparison results for stochastic fluid networks.
+Queueing Systems, 66(2):155–168, 2010.
+[8] J. M. Harrison and M. I. Reiman. Reflected Brownian motion on an orthant.The Annals of Probability, 9(2):302–
+308, 1981.
+[9] J. Mallet-Paret and R. D. Nussbaum. Generalizing the Krein–Rutman theorem, measures of noncompactness
+and the fixed point index.Journal of Fixed Point Theory and Applications, 7(1):103–143, 2010.
+[10] H. P. McKean. A. Skorohod’s stochastic integral equation for a reflecting barrier diffusion.Journal of Mathematics
+of Kyoto University, 3(1):85–88, 1963.
+[11] H. P. McKean.Stochastic integrals. Academic Press, 1969.
+[12] R. D. Nussbaum. Eigenvectors of nonlinear positive operators and the linear Krein–Rutman theorem. InFixed
+Point Theory, pages 309–330, Berlin, Heidelberg, 1981. Springer.
+[13] A. V. Skorokhod. Stochastic equations for diffusion processes in a bounded region.Theory of Probability & Its
+Applications, 6(3):264–274, 1961.
+[14] H. Tanaka. Stochastic differential equations with reflecting boundary condition in convex regions.Stochastic
+Processes: Selected Papers of Hiroshi Tanaka, 9:157, 1979.
+[15] W. Whitt.Stochastic-process limits: An introduction to stochastic-process limits and their application to queues.
+Springer, New York, 2002.

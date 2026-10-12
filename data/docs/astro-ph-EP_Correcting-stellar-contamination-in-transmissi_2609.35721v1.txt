@@ -1,0 +1,2082 @@
+Title: Correcting stellar contamination in transmission spectroscopy with contemporaneous monitoring: Application to GJ 1214 b
+Authors: Ò. Porqueras-León, M. Perger, J. C. Morales, I. Ribas 等 22 人
+Published: 2026-09-28
+arXiv: 2609.35721v1
+Subject: astro-ph.EP
+Source: https://arxiv.org/abs/2609.35721v1
+Pages: 22
+========================================================================
+
+Astronomy&Astrophysicsmanuscript no. aanda©ESO 2026
+September 29, 2026
+Correcting stellar contamination in transmission spectroscopy
+with contemporaneous monitoring: Application to GJ 1214 b ⋆
+Ò. Porqueras-León1,2 , M. Perger1,2 , J. C. Morales1,2 , I. Ribas1,2 , J. Blanco-Pozo1,2,3 , H. Tabernero1,2 , E. Herrero1,
+E. Pallé4,5 , H. Parviainen4,5 , F. Murgas4,5 , C. Rodríguez-López6, P. H. Hauschildt7, A. Schweitzer7, N.-E. Nèmec1,2 ,
+D. Baroch1, N. R. C. Gomes1,2 , G. Anglada-Escudé1,2 , J. Aceituno8, N. Narita4,9,10 , A. Fukui4,9 , M. Mori10,11 , and
+Y . Smolyarova12
+1 Institut d’Estudis Espacials de Catalunya (IEEC), Edifici RDIT, Campus PMT-UPC, 08860 Castelldefels (Barcelona), Spain
+e-mail:porqueras@ieec.cat
+2 Institut de Ciències de l’Espai (ICE, CSIC), Campus UAB, c/Can Magrans s/n, 08193 Bellaterra (Barcelona), Spain
+3 Facultat de Física, Universitat de Barcelona (UB), Martí Franquès 1, 08028, Barcelona, Spain
+4 Instituto de Astrofísica de Canarias (IAC), 38200 La Laguna, Tenerife, Spain
+5 Departamento de Astrofísica, Universidad de La Laguna (ULL), 38206 La Laguna, Tenerife, Spain
+6 Instituto de Astrofísica de Andalucía (IAA-CSIC), Glorieta de la Astronomía s/n, 18008 Granada, Spain
+7 Hamburger Sternwarte, Gojenbergsweg 112, 21029 Hamburg, Germany
+8 Centro Astronómico Hispano en Andalucía, Observatorio de Calar Alto, Sierra de los Filabres, 04550, Gérgal, Almería, Spain
+9 Komaba Institute for Science, The University of Tokyo, 3-8-1 Komaba, Meguro, Tokyo 153-8902, Japan
+10 Astrobiology Center, 2-21-1 Osawa, Mitaka, Tokyo 181-8588, Japan
+11 National Astronomical Observatory of Japan, 2-21-1 Osawa, Mitaka, Tokyo 181-8588, Japan
+12 Barcelona School of Economics (BSE), 08005 Barcelona, Spain
+Received 15 May 2026
+ABSTRACT
+Context.Transmission spectroscopy has emerged as an essential tool for characterising the atmospheres of transiting exoplanets.
+However, stellar surface inhomogeneities contaminate transmission spectra, posing a major challenge, particularly to high-precision
+observations like those from theJames Webb Space Telescope(JWST).
+Aims.We develop and apply practical methodologies to correct for stellar contamination in transmission spectroscopy data, thereby
+improving the accuracy of exoplanet atmospheric characterisation.
+Methods.We obtained coordinated multi-band photometry and high-resolution spectroscopy around JWST observations of GJ 1214 b
+and applied two correction frameworks: (i) an inversion with theStarSimcode, in which we infer stellar activity parameters from
+the monitoring data and propagate them to corrections; and (ii)UnSPOTTER, a data-driven approach in which neural networks (NNs)
+are trained on a large suite ofStarSimsimulations to learn the mapping from the monitoring data to the corrections.
+Results.Both frameworks agree within uncertainties and indicate that the JWST observations of GJ 1214 occurred at a favourable
+rotation phase with low stellar contamination. ForUnSPOTTER, the inferred corrections can be constrained at the∼15-ppm level across
+the JWST wavelength range, implying post-correction residuals of the same order. If the same system were observed near activity
+maximum, the predicted contamination would be strongly chromatic and substantially affect atmospheric retrievals, highlighting the
+importance of coordinated ground-based monitoring and robust activity correction techniques to accurately interpret transmission
+spectra.
+Conclusions.The two approaches are complementary but serve different roles. The inversion yields physically interpretable parame-
+ters and surface maps, whereasUnSPOTTERmarginalises more efficiently over surface-configuration degeneracies and provides tighter
+predictive corrections once trained and validated within the relevant simulation domain. The NNs carry an upfront training cost, but
+then enable fast predictions within their training distribution. Our pipeline can potentially be generalised to other active stars: with
+multi-band and multi-technique monitoring around JWST visits, it can provide activity-level forecasts for scheduling and activity
+corrections for atmospheric analyses.
+Key words.planetary systems – starspots – stars: activity – stars: individual: GJ 1214 – planets and satellites: atmospheres
+1. Introduction
+Over the past three decades, exoplanetary research has witnessed
+ground-breaking advancements, marked by the discovery of ex-
+oplanets through methods like the Doppler technique and photo-
+metric transits (e.g. Mayor & Queloz 1995; Charbonneau et al.
+⋆ Based on observations collected at Centro Astronómico Hispano en
+Andalucía, Calar Alto, jointly operated by the Instituto de Astrofísica de
+Andalucía (IAA-CSIC) and Junta de Andalucía.
+2000; Anglada-Escudé et al. 2016; Gillon et al. 2017). Expand-
+ing beyond detection, the scientific community now also endeav-
+ours to characterise the atmospheres of known transiting plan-
+ets. Transmission spectroscopy has emerged as a pivotal method,
+where the chromatic dependence of the planetary transit depth
+reveals crucial information about the planet’s atmosphere, en-
+abling the study of its chemical composition, abundances, and
+physical properties (e.g. Seager & Sasselov 2000; Charbonneau
+Article number, page 1 of 22
+arXiv:2609.35721v1 [astro-ph.EP] 28 Sep 2026
+
+A&A proofs:manuscript no. aanda
+et al. 2002; Tinetti et al. 2007; Fortney et al. 2010; Tsiaras et al.
+2019; Madhusudhan 2019).
+In practice, the transit depth is measured as the square of the
+planet-to-star radius ratio,p 2(λ)B(R p/R⋆)2 for a homogeneous
+stellar disc, with its wavelength (λ) dependence tracing atmo-
+spheric opacity. However, the presence of magnetically-driven
+evolving active regions and granulation patterns on stellar sur-
+faces introduces challenges to the accurate measurement of tran-
+sit depths by inducing a variety of signals (Sing et al. 2011; Mc-
+Cullough et al. 2014; Rackham et al. 2017). The inhomogeneous
+distribution of bright and dark magnetic features (e.g. faculae
+and spots) means that the conventional approach of using the
+entire visible stellar disc as the reference light source during a
+planet’s transit may not accurately represent the flux occulted
+by the planet along its transit chord. This phenomenon is known
+as the transit light source (TLS) effect (Rackham et al. 2018,
+2019, 2023). Failure to account for the TLS effect results in
+the contamination of the transmission spectrum with stellar fea-
+tures, biasing the retrieval of planetary atmospheric properties.
+For instance, theJames Webb Space Telescope(JWST) NIRISS
+transmission spectra of TRAPPIST-1 b exhibit robust evidence
+of stellar contamination (Lim et al. 2023), and Edwards et al.
+(2021) encountered challenges usingHubble Space Telescope
+(HST) observations of LHS 1140b. Changes in visit-to-visit con-
+tamination and offsets between instruments have also been re-
+ported in JWST spectra of GJ 3090 b (Ahrer et al. 2025). Despite
+significant research efforts, characterising stellar contamination
+in transmission spectroscopy remains a challenge that highlights
+the critical need for advanced tools to address and mitigate stel-
+lar effects, ensuring more robust and conclusive assessments of
+exo-atmospheres.
+Several strategies have been used to mitigate these ef-
+fects. One approach is forward-modelling of active photo-
+spheres, in which chromatic biases are predicted by simulating
+spots/faculae, e.g. SOAP (Boisse et al. 2012; Cristo et al. 2025),
+StarSim(Herrero et al. 2016; Rosich et al. 2020; Gomes et al.,
+in prep.),SAGE(Chakraborty et al. 2024),actress(Johnson
+et al. 2021) orStARPA(Cracchiolo et al. 2021a,b; Thompson
+et al. 2024). These tools can be used to interpret monitoring data
+or compute correction factors under an assumed surface config-
+uration. Another approach is joint planet–star retrieval, which
+embeds stellar heterogeneity directly in the fit so that activity
+parameters are inferred alongside atmospheric properties, e.g.
+AURA (Pinhas et al. 2018) orASteRA(Thompson et al. 2024). In
+practice, many of these frameworks describe the stellar contam-
+ination through simplified disc-averaged prescriptions. While
+such treatments can be adequate in some favourable regimes,
+recent work has shown that they can significantly bias the in-
+ferred stellar-contamination correction, and therefore the cor-
+rected transmission spectrum, when limb darkening, the spatial
+distribution of active regions, and the transit geometry become
+important (Sumida et al. 2026). Surface-based approaches such
+asStarSim, by contrast, retain these geometric effects explicitly.
+In parallel, other developments are expanding the practical
+toolkit. Data-driven and machine learning (ML) approaches have
+been explored mainly for related tasks such as detecting and
+correcting spot-crossing signatures in transit light curves (Niko-
+laou et al. 2023) or accelerating retrievals (Ardévol Martínez
+et al. 2022), with early demonstrations on simulated and lim-
+ited observed datasets. Meanwhile, theory is refining the spectra
+and centre-to-limb behaviour of magnetic components, with ad-
+vances in 3D radiative magnetohydrodynamics (MHD) models
+informing facular and spot contrasts, improving the priors and
+templates that forward models and joint retrievals rely on, and
+quantifying when 1D atmosphere models are insufficient to re-
+produce the behaviour of magnetic regions (Witzke et al. 2022;
+Bhatia et al. 2025; Smitha et al. 2025).
+Despite this progress, there remains a practical gap between
+activity monitoring and correction: given contemporaneous time
+series around a transit, there is no standardised route to derive
+epoch-specific chromatic corrections with uncertainties that can
+be propagated to the observed transmission spectra.
+In this work, we introduce a pipeline to mitigate stellar
+contamination in transmission spectroscopy, and apply it to
+JWST/NIRSpec G395H observations of GJ 1214 b. The pipeline
+combines coordinated monitoring around the transits (multi-
+band photometry and high-resolution spectroscopy in the case
+of GJ 1214 b) with two complementary correction frameworks:
+(i) an inversion approach withStarSimthat fits the monitor-
+ing data to infer physically interpretable stellar activity param-
+eters and propagates them into wavelength-dependent transit-
+depth corrections; and (ii)UnSPOTTER, 1 a data-driven approach
+in which a transformer-encoder neural network (NN) ensemble
+is trained on a suite ofStarSimsimulations to learn the mapping
+from the same monitoring observables to the chromatic contam-
+ination, marginalising over surface-configuration degeneracies.
+Section 2 details the methodology and defines the two correc-
+tion frameworks. Section 3 describes the GJ 1214 system, the
+monitoring and JWST datasets, and the data reduction. Section 4
+presents the inferred stellar-contamination corrections at the ob-
+served JWST epochs and near activity maximum. Section 5 dis-
+cusses the implications, agreement between frameworks, and
+key limitations. Section 6 summarises our conclusions.
+2. Methodology
+At a high level, our methodology uses theStarSimcode
+in two complementary ways. Both frameworks aim to infer
+the wavelength-dependent stellar contamination correction to
+p2(λ), which we denote by∆p 2(λ). In the inversion frame-
+work,StarSimis fitted directly to the observed monitoring
+time series to infer an ensemble of stellar surface configurations,
+which are then propagated into contamination corrections. In
+theUnSPOTTERframework,StarSimis instead used in forward
+mode to generate a synthetic training set spanning the target-
+relevant parameter space and observing characteristics, from
+which a neural-network ensemble learns the mapping from mon-
+itoring observables to the associated contamination spectrum.
+Once trained,UnSPOTTERis applied directly to the observed
+monitoring data. A schematic overview is shown in Fig. 1.
+2.1. TheStarSimmodelling code
+At the core of our methodology isStarSim, 2 (Herrero et al.
+2016; Rosich et al. 2020; Gomes et al., in prep.) a modelling
+code used to simulate the effects of stellar activity on photo-
+metric and spectroscopic time series. Active elements, repre-
+sented as circular regions with a lower/higher effective temper-
+ature than the stellar photosphere, are denoted as spots/faculae,
+respectively. The code divides the stellar photosphere into a grid
+of elements (spots, faculae or quiet photosphere) and assigns
+synthetic stellar spectra Doppler-shifted according to their pro-
+jected velocity, with corresponding effective temperature. The
+1 Uncontaminated Spectra from Photospheric Observables using
+Transformers for TLS Effect Removal.
+2 https://github.com/dbarochlopez/starsim
+Article number, page 2 of 22
+
+Ò. Porqueras-León et al.: Correcting stellar contamination in transmission spectroscopy with contemporaneous monitoring
+Observed monitoring
+Time series+target
+constraints
+StarSiminversion
+Fit the monitoring data
+Compatible surface models
+Ensemble of active-region maps
+Forward transit
+simulations
+Propagate every
+surface model
+Contamination spectra
+Ensemble of∆p 2(λ)
+Inversion framework
+Target-informed design
+Priors, cadence, uncertainties,
+and observed variability level
+StarSimsimulations
+Sample the
+training domain
+Synthetic labelled dataset
+Monitoring time series+true
+∆p2(λ) for each simulation
+TrainUnSPOTTER
+Neural-network ensemble
+Apply to observations
+Predicted∆p 2(λ)
+UnSPOTTERframework
+observed monitoring Correct the observed
+transmission spectrum
+Epoch-specific stellar-contamination
+correction with uncertainties
+Observations/Target inputs Forward simulations Fitting/Learning Correction products
+Fig. 1:Schematic overview of the two stellar-contamination correction frameworks. Both approaches use the same underlying
+StarSimphysical model but differ in how they use the monitoring observations. The inversion framework fits those observations
+directly to obtain an ensemble of compatible stellar surfaces, whose contamination spectra are then simulated. In theUnSPOTTER
+framework, target-informedStarSimsimulations provide a labelled dataset used to train a neural-network ensemble; the trained
+model is then applied to the observed monitoring time series. Both approaches return an epoch-specific∆p 2(λ) correction and its
+uncertainty for the observed transmission spectrum.
+centre-to-limb variation can either be specified through an ana-
+lytic limb-darkening law or obtained directly from atmosphere-
+model specific intensities; in this work, we use the latter ap-
+proach for both spots and the quiet photosphere.StarSimcan
+additionally model faculae using a limb-brightening prescrip-
+tion (see Herrero et al. 2016). Observables are computed by inte-
+grating the specific intensities over the visible hemisphere, thus
+working withµ-resolved spectraI λ(µ), withµbeing the cosine
+of the angle between the surface normal and the line of sight.
+Recent 3D MHD simulations suggest that the solar
+spot/facula dichotomy does not straightforwardly carry over to
+low-mass stars: magnetic regions that would be called “faculae”
+in the solar context may only be weakly brighter than the quiet
+photosphere or even have negative contrast in the optical/near-IR
+(Beeck et al. 2015; Johnson et al. 2021; Norris et al. 2023; Kos-
+togryz et al. 2026; Shapiro et al. 2026). Since the target anal-
+ysed in this work is an M4 dwarf (Section 3), for which such
+simulations do not predict solar-like bright faculae to dominate,
+we adopt a simplified two-component photosphere in which all
+magnetically active surface inhomogeneities are represented by
+cooler dark components. For simplicity and consistency with
+StarSim, we refer to these dark components as spots through-
+out.
+A set of seven parameters are used to characterise an active
+region: the time of appearance, lifetime, location on the surface
+(colatitudeθ sp and longitudeϕ sp), angular radius (rsp), tempera-
+ture contrast (∆Tsp BT ⋆−T sp), and time-evolution law. The last
+two variables are assumed to be identical for all active elements.
+TheStarSimmodelling code also takes into account all the
+relevant geometric, physical and wavelength-dependent features
+related to the presence of active regions, such as limb darken-
+ing/brightening, convective blueshift (Baroch et al. 2020), and
+the projection of each surface element.StarSimcan also simu-
+late the effects of a planet on the time series. At each timestamp,
+the projected position of the planet is computed and the con-
+tribution from surface elements occulted by the planetary disc
+is removed from the disc-integrated flux. Consequently, spot or
+facular crossings are naturally included when an active region
+intersects the transit chord. A number of stellar and planet input
+parameters can be adjusted, such as the effective temperature of
+the star, its rotation period, its radius, and the surface gravity.
+After integrating the whole surface, the code is able to deliver
+light curves and cross-correlation functions (CCFs) for a variety
+of instruments. From the CCF, the radial velocity (RV) and com-
+mon activity indicators such as the bisector inverse slope (BIS),
+full width at half maximum (FWHM) and contrast, as well as
+the chromatic index (CRX, Zechmeister et al. 2018), can be ac-
+cessed.
+2.2. Transmission spectroscopy withStarSim
+To simulate the transmission spectrum of an exoplanet, we
+first adapt the resolution and sampling of the synthetic spectra
+used byStarSim(e.g. PHOENIX, Husser et al. 2013, see Ap-
+pendix A for further details). Then, we compute a time series of
+disc-integrated stellar spectra before, during, and after transit,
+and construct synthetic spectral light curves by integrating the
+spectra over user-defined wavelength bins and/or weighting by
+instrumental throughputs (e.g. JWST/NIRSpec, orAriel/AIRS;
+Tinetti et al. 2018). We estimatep 2(λ) from these light curves
+by fitting analytic transit models computed withbatman 3 (Krei-
+dberg 2015). As a validation step, we also performed Bayesian
+transit fits withjuliet 4 (Espinoza et al. 2019) and verified that
+p2(λ) values were consistent for representative channels.5
+The transit model is parametrised by the planet-to-star ra-
+dius ratiop, semi-major axisa/R ⋆, orbital inclinationi, time
+of mid-transitT c, orbital periodP p, eccentricitye, argument of
+periastronω, and limb-darkening (LD) coefficient vectoru. For
+each transit, we first fit the white light curve to obtain the global
+white-light transit solution after removing a linear out-of-transit
+baseline.6 For spectroscopic channels, we renormalise each by
+a channel-specific linear baseline, fix the global white-light so-
+lution, and fit per-channel{p(λ),u(λ)}. Limb darkening is fit-
+ted in compact, physically-bounded parameter spaces follow-
+ing the parametrisations in Kipping (2013, 2016). We adopted
+the quadratic LD law for this work. As an additional check, we
+3 https://lkreidberg.github.io/batman
+4 https://juliet.readthedocs.io/en/latest/
+5 These routines were implemented withinStarSimand are planned
+for inclusion in a forthcoming public release (Gomes et al., in prep.).
+6 The stellar flux need not be strictly constant because the projected
+visibility of the active regions changes as the star rotates. We remove
+this variation so that the fitted transit depth isolates the transit signal.
+Over the short time span surrounding each simulated transit, a linear
+approximation is sufficient, given the long rotation period of our target
+(Section 3).
+Article number, page 3 of 22
+
+A&A proofs:manuscript no. aanda
+tested the three-parameter law, which has been shown to miti-
+gate some wavelength-dependent biases (Keers et al. 2024), but
+we did not find significant differences for the GJ 1214 system
+analysed in this paper (see Appendix B for details).
+The fitted compact parameters are transformed to theu
+coefficients used bybatmanfor model evaluation. Optimi-
+sation uses Levenberg–Marquardt (LM, Moré 1978) when
+no bounds are required and Trust-Region-Reflective (TRF,
+Branch et al. 1999) when enforcing physical bounds (e.g.p∈
+[0,1], compact LD parameters∈[0,1]), as implemented in
+scipy.optimize.curve_fit(Virtanen et al. 2020). Because
+the simulated light curves have no per-point uncertainties we
+perform unweighted least-squares. The stellar contamination
+correction is then defined as the differential signal relative to an
+inactive photosphere,
+∆p2(λ)Bp 2
+active(λ)−p 2
+inactive(λ).(1)
+2.3. Inverse modelling correction framework
+StarSimcan also be run in inverse mode to infer a stellar ac-
+tivity model that reproduces the observed time series. This is
+solved with a two-level scheme: an outer Monte Carlo sampling
+drawsN steps realisations of the global model parameters (e.g.Prot
+or∆T sp) and, at each step, a simulated-annealing optimiser per-
+formsN iters,SA iterations to search for a spot configuration that
+maximises the joint log-likelihoodℓ=lnLof the monitoring
+data. Fitting multiple bands and spectroscopic activity indicators
+simultaneously helps reduce degeneracies such as between spot
+area coverage and temperature contrast (see Rosich et al. 2020).
+2.3.1. Stellar surface inference from the monitoring data
+We fit the monitoring time series with the inverse mode, using
+priors informed by literature values (when available) and fix-
+ing parameters that are weakly constrained by the monitoring
+dataset.
+The number of spots is fixed inStarSim’s inverse mode.
+We therefore fit a sequence of models with increasing spot count
+and selectN sp by balancing goodness of fit against model com-
+plexity using the Akaike information criterion (AIC; Akaike
+1974). For each candidate number of spotsN, we evaluate the
+maximised log-likelihood ˆℓN and compute AIC using the corre-
+sponding number of free parametersk N. In our setup each addi-
+tional spot adds three parameters (ϕsp,θ sp,r sp), sok N =k 0 +3N,
+withk 0 common to all models. We also compute the Bayesian
+information criterion (BIC; Schwarz 1978) and adjacent-model
+log-likelihood gains∆ ˆℓN−1→N = ˆℓN− ˆℓN−1 as diagnostic cross-
+checks. Because the data are time series with correlated residuals
+and spot models are non-regular, these metrics are used heuristi-
+cally rather than as formal hypothesis tests. The full diagnostics
+for the case of GJ 1214 are given in Appendix C.
+2.3.2. Ensemble summaries for∆p 2(λ)
+OnceN sp is selected, we first discard inversion runs that did not
+return a valid likelihood or physically admissible surface con-
+figuration. Among the remaining inversion runs, we retain all
+solutions with∆ℓ Nsp = ˆℓNsp−ℓ Nsp≤15 relative to the maximum-
+likelihood solution. This leavesN sol valid solutions. For each
+remaining surface map, we simulate spectral light curves at
+the transmission-spectroscopy epochs with and without active
+regions, and compute the corresponding correction spectrum
+∆p2(λ) using the procedure in Section 2.2.
+Because many distinct surface configurations fit the moni-
+toring data comparably well, we propagate this map degeneracy
+into the correction by treating all retained solutions equally. At
+each wavelength bin, we adopt the ensemble mean of∆p 2(λ)
+as our point estimate. Uncertainties are quantified by the cen-
+tral 68% interval, defined by the 16 th and 84th percentiles of the
+ensemble of∆p 2(λ) values atλ. This approach propagates the
+surface-configuration degeneracy into the final correction.
+2.4. Deep learning correction framework
+We trainUnSPOTTER, a NN ensemble to predict stellar contami-
+nation corrections directly from the monitoring time series.
+2.4.1. Synthetic dataset generation
+We generate a synthetic dataset ofN sims StarSimsimulations.
+For each simulation, we generate the corresponding time series
+(e.g. multi-band photometry, RVs, activity indices) and the as-
+sociated corrections∆p 2(λ), computed using the procedure de-
+tailed in Section 2.2. We sample model parameters from priors
+designed to span the range consistent with the target system: pa-
+rameters that have literature constraints are sampled from priors
+centred on the literature values, while epoch-dependent parame-
+ters are drawn independently for each simulation from distribu-
+tions tuned so that the simulated monitoring time series repro-
+duce the empirical variability level of the observed monitoring
+dataset. We also removed a small number of simulated realisa-
+tions that produced pathological correction spectra, such as un-
+physical values.
+To make the simulated data more representative of real ob-
+servations and improve noise robustness, we augment each inde-
+pendent base simulation by generatingN noisy noisy realisations.
+We add Gaussian noise to all observables, with a standard devi-
+ation equal to the quadrature sum of (i) the measurement uncer-
+tainties of the real data and (ii) the data–model residuals from the
+best-fit inversion. This accounts for reported uncertainties and
+residual variability and regularises the network against spurious
+fluctuations (see also Perger et al. 2023).
+The train, validation, and test sets are defined at the level of
+the independentStarSimbase simulations, before noise aug-
+mentation. We first reserve 20% of the base simulations as
+an independent test set and then assign 20% of the remain-
+ing simulations to validation, yielding an approximate 64/16/20
+train/validation/test split. AllN noisy realisations derived from a
+given base simulation remain in the same partition, preventing
+noisy versions of the same stellar-surface configuration from ap-
+pearing in both training and evaluation data. The validation set
+is used for hyperparameter selection, training diagnostics, and
+checkpoint selection, whereas the test set is held out from model
+fitting and is used only for final performance assessment and cal-
+ibration.
+This split allows a substantial number of simulations to be
+reserved for validation and testing while still allocating the ma-
+jority to training. In particular, for the GJ 1214 application pre-
+sented in Sect. 4.2, the learning-curve analysis in Appendix E
+shows that the adopted training-set size lies in a regime of di-
+minishing returns.
+2.4.2. Preprocessing
+For preprocessing, we treat each observational modality as a sep-
+aratebranch b(e.g. I-band photometry, V-band photometry, RV
+Article number, page 4 of 22
+
+Ò. Porqueras-León et al.: Correcting stellar contamination in transmission spectroscopy with contemporaneous monitoring
+residuals, BIS. . . ). It is important to note that since branches cor-
+respond to different observables, they in general have different
+timestamps and number of observations, that is, branchbhasL b
+observations at timestamps{t (b)
+ℓ }Lb
+ℓ=1. Each branch is supplied to
+the model as an array of shape (Nsims·N noisy,L b,1).
+We apply per-branch normalisation. For the photometric
+branches and output corrections, we subtract the training-set
+mean and divide by the training-set standard deviation. For the
+spectroscopic branches (RV residuals, FWHM, BIS), we subtract
+the per-simulation mean and scale by the empirical standard de-
+viation measured in the real monitoring series. This addresses
+a known simulation–observation amplitude mismatch:StarSim
+models the underlying stellar variability signal, while the ob-
+served variability amplitude also reflects instrumental effects,
+residual systematics, and non-activity Doppler contributions in
+the RVs. Without rescaling, the NN could misinterpret this am-
+plitude difference as informative structure.
+These normalisation factors are computed once from the ob-
+served monitoring data and subsequently kept fixed for all syn-
+thetic inputs. They are therefore determined solely from the input
+observations as part of the target-specific preprocessing, and do
+not make use of the simulated∆p 2 values.
+Each observation (branchb, observation indexℓ, timestamp
+t(b)
+ℓ ) is encoded into atoken:
+τ(b)
+ℓ =  v(b)
+ℓ ,PE  t(b)
+ℓ
+,e b
+⊤,(2)
+where:
+–v (b)
+ℓ ∈Ris the normalised measurement (flux, RV residual, or
+activity index) after per-branch normalisation, representing
+the measured stellar variability with this observation.
+–PE(t)∈R dtemp is a fixed sinusoidal time encoding in the spirit
+of the original Transformer positional encoding (Vaswani
+et al. 2017), defined component-wise as
+PE(t)2i =sin
+ ˜t
+n2i/dtemp
+!
+,PE(t) 2i+1 =cos
+ ˜t
+n2i/dtemp
+!
+,(3)
+withn=10,000,i=0,...,d temp/2−1, and ˜tB(t−t ref)/tscale
+is a normalised timestamp, defined using a fixed reference
+epocht ref and fixed timescalet scale to keep the encoding argu-
+ments on a numerically well-behaved scale over typical mon-
+itoring baselines. This encoding injects information about
+the observation temporal order and spacing, enabling the NN
+to reason about quasi-periodic and long-range temporal cor-
+relations.
+–e b ∈R demb is a learned embedding vector that encodes the
+data modality. This allows the model to distinguish and com-
+bine different types of observations. Each branchbis as-
+signed an integer index that is mapped, via a trainable em-
+bedding layer, to a dense vectore b. These embeddings are
+optimised jointly with the rest of the NN.
+LetI={(b,ℓ) :b=1,...,B, ℓ=1,...,L b}. We orderIso
+t(bk)
+ℓk
+are non-decreasing timestamps (t(bk)
+ℓk
+≤t (bk′ )
+ℓk′ ifk<k ′). Then,
+the input sequence for a given simulation is the time-ordered
+concatenation of tokens,
+X=  τ(b1)
+ℓ1
+,τ (b2)
+ℓ2
+, ...,τ (bL)
+ℓL
+⊤∈R L×dtok,(4)
+whered tok =1+d temp +d emb andL=|I|= PB
+b=1 Lb.
+2.4.3. Architecture, hyperparameter tuning and training
+The sequence of tokens is processed by a transformer encoder-
+inspired architecture depicted in Fig. 2, which is implemented in
+TensorFlow/Keras (Abadi et al. 2016; Chollet et al. 2018). The
+sequence is first projected with a dense layer to the model dimen-
+siond model. The projected tokens are passed through a stack of
+Nblocks transformer encoder layers. Each layer applies multi-head
+self-attention (MHSA) withN heads heads, residual connections,
+layer normalisation, and a two-layer position-wise (i.e. applied
+independently to each token) feed-forward network of dimen-
+siond FFN. Attention is bidirectional over the full time-sorted
+sequence and across branches, allowing tokens from different
+branches and epochs to attend to one another. We use post-norm
+blocks, in which layer normalisation is applied after the residual
+addition, and dropout (randomly zeroing a fraction of activations
+during training) is applied after the input projection and after the
+MHSA and feed-forward outputs, with dropout rate (probability
+that any given neuron will be deactivated) dropouttr.
+After the final encoder block, the token sequence is ag-
+gregated with global average pooling across tokens to produce
+a fixed-length summary vector. This is processed byN dense
+fully connected layers with dimensiond dense and dropout rate
+dropoutdense and finally a linear output layer returning the pre-
+dicted contamination vector∆p 2(λ)∈R Nλ defined on the target
+wavelength grid. All hidden dense layers use rectified linear unit
+(ReLU) activations, i.e. zero for negative inputs and linear for
+non-negative inputs.
+We optimise the NN architecture and training configura-
+tion usingOptuna(Akiba et al. 2019), a Bayesian optimi-
+sation framework that adaptively explores the hyperparameter
+space and prunes (early stops) unpromising trials. The hyper-
+parameters included in the search space ared temp,d emb,d model,
+Nblocks,N heads,d FFN, dropout tr,N dense,d dense, dropout dense, ini-
+tial learning rateη 0 (a hyperparameter that controls how much
+the weights are adjusted in response to estimated errors dur-
+ing training), and batch size (number of training samples pro-
+cessed in one forward/backward pass before updating model
+weights). We adoptOptuna’s default Tree-structured Parzen Es-
+timator (TPE) sampler, which adaptively explores promising re-
+gions of parameter space based on prior trials. To accelerate
+the search, we use theMedianPrunerin combination with the
+TFKerasPruningCallbackto prune trials whose intermediate
+validation losses are worse than the running median at the same
+epoch. Architecturally inconsistent configurations are explicitly
+pruned. Each trial is trained for up to 15 epochs (full passes of the
+training set through the learning algorithm) with early stopping,
+sufficient to evaluate relative model quality without expending
+full training resources.
+The hyperparameter search is performed on the fixed
+train/validation partition. The same validation set is used for
+early stopping and checkpoint selection during final training,
+while the independent test set is not used at either stage and is
+reserved for final performance assessment and uncertainty cali-
+bration.
+The network is trained with the Adam optimiser (Kingma &
+Ba 2014), a training algorithm that computes an adaptive effec-
+tive step size for each parameter using running estimates of the
+gradient and its variance, while still being controlled by a global
+learning rate. We therefore use aReduceLROnPlateausched-
+uler to reduce this global learning rate when the validation loss
+stops improving. We train the final model for 30 epochs, retain-
+ing the weights saved from the epoch with lowest validation loss.
+We adopt mean absolute error (MAE) as the loss function as it
+Article number, page 5 of 22
+
+A&A proofs:manuscript no. aanda
+Inputs
+Time series
+(photometry, RV , indices)
+Tokenisation
+Norm.+PE(t)+e b
+Build sequence
+Concat. & time-sort
+Projectd tok→d model
+Transformer encoder stack
+Multi-head self-attention (MHSA)
+(Nheads heads)
+Add & LayerNorm
+Position-wise FFN
+Dense→ReLU→Dense
+Add & LayerNorm
+×N blocks
+Pooling+Dense
+Global avg. pool→dense+dropout
+Output
+∆p2(λ)
+Fig. 2:Neural-network architecture used for theUnSPOTTERcorrection framework.
+reduces sensitivity to outliers and produces less biased predictors
+in repeated trainings, and monitor mean squared error (MSE) as
+a complementary metric.
+2.4.4. Posterior-predictive inference and uncertainties
+To predict∆p 2(λ) for the transit of interest, we use the actual
+observed monitoring data as inputs to the network. Hence, the
+sequence of measurements ˜v(b)
+ℓ at observation timest (b)
+ℓ also has
+some associated measurement uncertainties eσ(b)
+ℓ .
+To propagate the uncertainties in the observed monitoring
+data, we generateRMonte Carlo realisations of the input se-
+quence by sampling each token value from a normal distribution,
+ˆv(b,r)
+ℓ ∼N  ˜v(b)
+ℓ ,(eσ(b)
+ℓ )2,r=1,...,R,(5)
+while keeping the temporal encoding and branch embeddings
+fixed. Hence, each token takes the form
+τ(b,r)
+ℓ =  ˆv(b,r)
+ℓ ,PE(t (b)
+ℓ ),e b
+⊤.(6)
+Each perturbed input sequence represents a plausible in-
+stance of the monitoring data given the measurement errors,
+ˆX(r) =  τ(b1,r)
+ℓ1
+,τ (b2,r)
+ℓ2
+, ...,τ (bL,r)
+ℓL
+⊤,(7)
+that is, the chronologically ordered sequence of tokens for the
+r-th Monte Carlo realisation.
+Letg(·;ω) :R L×dtok →R Nλ denote the neural map from
+inputs to the wavelength-dependent contamination spectrum
+∆p2(λ), with trained NN weightsω. To account for model un-
+certainty, we performDstochastic forward passes for each real-
+isation with dropout active, producing predictions
+ˆy(r,d) =g( ˆX(r);ω (d)),d=1,...,D,(8)
+whereω (d) denotes the effective weight configuration obtained
+by applying a random dropout mask toωduring thed-th for-
+ward pass. This procedure, known as Monte Carlo dropout (Gal
+& Ghahramani 2015), corresponds to sampling from an approx-
+imate posterior distribution over the network weights.
+To reduce biases from individual network initialisations and
+stochastic training realisations, we train an ensemble ofM
+independently-initialised networks, each sharing the same fixed
+hyperparameters. Different random seeds produce diverse local
+optima of the optimisation procedure; pooling across these repli-
+cas improves both calibration and coverage (Lakshminarayanan
+et al. 2016). We hence obtain drawsy(m,r,d) from the approximate
+posterior predictive distribution (the prediction from NN model
+m, input realisationr, and dropout passd). The posterior predic-
+tive distribution for the contamination spectrum is then approxi-
+mated by
+p(y∗| ˆX,D train)≈ 1
+S
+MX
+m=1
+RX
+r=1
+DX
+d=1
+δ y∗−y (m,r,d),(9)
+whereS=MRDis the total number of pooled draws, andD train
+is the training dataset.
+Posterior summaries are computed from the pooled draws,
+y(m,r,d). Let the set of indices for all draws be
+S= {(m,r,d) | 1≤m≤M,1≤r≤R,1≤d≤D }.(10)
+For each wavelength binλ j, let
+ys,j By (m,r,d)
+j ,fors=(m,r,d)∈S,(11)
+denote the pooled draws from the combined input Monte Carlo,
+dropout, and ensemble procedure. The empirical marginal cu-
+mulative distribution function (CDF) at wavelengthλ j is then
+CDF j(y)= 1
+S
+X
+s∈S
+1 ys,j≤y ,(12)
+where1(·) is the indicator function, equal to 1 when its argument
+is true and to 0 otherwise. Theq-th percentile of the approximate
+posterior predictive is defined as the generalised inverse of the
+CDF:
+P j(q)=inf
+n
+y: CDF j(y)≥ q
+100
+o
+,q∈(0,100).(13)
+Our point estimate for the correction at each wavelength is the
+posterior mean,
+∆p2(λ j)B 1
+S
+X
+s∈S
+ys,j.(14)
+The corresponding raw uncertainty interval is defined by the
+16th and 84th percentiles of this distribution, P j (16),P j (84).
+Because the uncertainty represented by the ensemble, in-
+put perturbations, and Monte Carlo dropout is not guaranteed
+to yield predictive intervals (PIs) with the desired 68% empirical
+coverage, we additionally calibrate the width of the raw intervals
+using the independent test set. Since the true contamination spec-
+trum is known for every synthetic test simulation, the empirical
+coverage of the PIs can be measured directly.
+Importantly, this calibration does not determine the
+wavelength-to-wavelength or case-to-case variation of the un-
+certainty. These variations are already encoded in the posterior-
+predictive distributions. Instead, we preserve this structure and
+scale the deviations of the lower and upper interval bounds from
+Article number, page 6 of 22
+
+Ò. Porqueras-León et al.: Correcting stellar contamination in transmission spectroscopy with contemporaneous monitoring
+the central prediction by a single common factor. The calibra-
+tion therefore adjusts only the absolute scale of the uncertainty
+intervals.
+Since the final prediction is made for a particular set of mon-
+itoring observations, we estimate this scale factor from test sim-
+ulations whose synthetic monitoring signals are compatible with
+the observed ones. For branchband observationℓ, we define the
+standardised residual
+z(b)
+i,ℓ =
+x(b),sim
+i,ℓ −x (b),obs
+ℓ
+σ(b),aug
+ℓ
+,(15)
+wherex (b),sim
+i,ℓ is the value of the corresponding monitoring ob-
+servable for the test simulationi,x (b),obs
+ℓ is its observed value,
+andσ (b),aug
+ℓ is the scatter adopted for that measurement in the
+noise augmentation described in Sect. 2.4.1. We then quantify
+the agreement between simulationiand the observed monitor-
+ing dataset using the Manhattan distance
+di = 1
+L
+BX
+b=1
+LbX
+ℓ=1
+z(b)
+i,ℓ
+.(16)
+We define the calibration sample as the test simulations
+whose monitoring data are compatible with the observations
+at the level of the adopted augmentation noise. If a simula-
+tion reproduces the same underlying monitoring signal as the
+observations, the standardised residuals defined above follow
+z∼N(0,1). Thus, we derive the expected distribution ofdun-
+der this noise model and use the simulations below the percentile
+corresponding to a 3σGaussian probability (99.73%) to deter-
+mine the uncertainty scale calibration.
+For each simulationiin this calibration sample and wave-
+length binλ j, let ˆyi,j denote the central prediction,y i,j the known
+simulated correction, andL raw
+i,j andU raw
+i,j the raw 16th- and 84th-
+percentile bounds. We rescale the lower and upper bounds using
+a common multiplicative factors,
+Lcal
+i,j =ˆyi,j−s
+
+ˆyi,j−L raw
+i,j
+
+,U cal
+i,j =ˆyi,j +s
+
+Uraw
+i,j −ˆyi,j
+
+.(17)
+The minimum scale factor required for the calibrated interval
+to contain the known simulated value is
+ri,j =
+
+ˆyi,j−y i,j
+ˆyi,j−L raw
+i,j
+,y i,j <ˆyi,j,
+yi,j−ˆyi,j
+Uraw
+i,j −ˆyi,j
+,y i,j≥ˆyi,j.
+(18)
+For a given scale factors, the calibrated interval contains the
+known valuey i,j if and only ifr i,j ≤s. Therefore, choosing the
+68th percentile of ther i,j values sets the empirical coverage of
+the calibration sample to 68%:
+s=Q 0.68
+n
+ri,j
+o
+,(19)
+whereQ 0.68 denotes the empirical 68th percentile over the cali-
+bration simulations and wavelength bins.
+We evaluate the calibration using five-fold cross-validation
+within the calibration sample. Independent base simulations are
+divided among the folds, with all realisations originating from
+the same base simulation kept together. For each fold,sis esti-
+mated using the other four folds and the resulting intervals are
+evaluated on the held-out simulations. This provides an out-of-
+fold estimate of the empirical coverage obtained by the calibra-
+tion procedure. After this validation, the final factor is estimated
+from the complete calibration sample and applied to the PI ob-
+tained for the observed monitoring data.
+3. A model for GJ 1214
+3.1. The GJ 1214 system
+GJ 1214 is a nearby M4 dwarf star hosting a sub-Neptune planet,
+GJ 1214 b. The planet was discovered by the MEarth transit sur-
+vey (Charbonneau et al. 2009). Early RV and transit follow-up
+established GJ 1214 b as a low-density sub-Neptune and refined
+its ephemeris (e.g. Anglada-Escudé et al. 2013; Harpsøe et al.
+2013; Gillon et al. 2014). GJ 1214 is active and photometrically
+variable due to rotating active regions (Berta et al. 2011; Narita
+et al. 2013; Nascimbeni et al. 2015). Mallonn et al. (2018) mea-
+sured a∼125-day rotation period and found variability domi-
+nated by unocculted dark spots. Table 1 summarises the proper-
+ties of the system.
+With a high transmission spectroscopy metric (Kempton
+et al. 2018), GJ 1214 b is a benchmark for atmospheric stud-
+ies. Early ground- and space-based transmission spectra were
+essentially featureless across the optical and near-infrared, con-
+sistent with either a high mean-molecular-weight atmosphere
+or a hydrogen-dominated atmosphere muted by high-altitude
+clouds/hazes (Kreidberg et al. 2014; Cáceres et al. 2014; Rack-
+ham et al. 2017). HST/WFC3 observations by Kreidberg et al.
+(2014) showed a flat near-IR spectrum with high precision, sup-
+porting high-altitude aerosols.
+Recent JWST observations have further constrained the at-
+mosphere of GJ 1214 b. MIRI-LRS thermal phase-curve data
+provided spectrally resolved emission and evidence for a metal-
+rich atmosphere with a thick aerosol layer (Kempton et al.
+2023). JWST/NIRSpec G395H transmission spectroscopy re-
+ported tentative CO2 and CH4 features, favouring very high at-
+mospheric metallicity beneath optically thick aerosols (Schlawin
+et al. 2024). Ohno et al. (2025) combined the HST/WFC3,
+JWST/NIRSpec G395H, and JWST/MIRI-LRS transmission
+spectrum to infer a metal-dominated atmosphere below the
+aerosol deck. Stellar activity has been reported to have a sig-
+nificant impact on the transit depths of this system. Rackham
+et al. (2017) found optical transit depths shallower than those in
+the near-infrared and interpreted this as evidence for unocculted
+faculae. However, subsequent long-term monitoring by Mallonn
+et al. (2018) found the variability of GJ 1214 to be more consis-
+tent with a spot-dominated photosphere.
+3.2. Observations and data reduction
+We conducted ground-based monitoring around the JWST ob-
+servations presented in Schlawin et al. (2024) using a variety of
+telescopes and instruments. Table 2 summarises the key aspects
+of the datasets used in our analysis, including monitoring peri-
+ods, time spans, and number of retained nightly-binned points.
+3.2.1. Photometry
+The Joan Oró Telescope (TJO, Colomé et al. 2010), located
+at Montsec Observatory, is a robotic telescope featuring a
+0.8 m primary mirror with an F/9.6 optical system in Ritchey-
+Chrétien configuration. It employs the Large Area Imager for
+Astronomy (LAIA), a high-performance CCD camera (Andor
+iKon XL 230-84) installed at its Cassegrain focus, which pro-
+vides a non-vignetted field of view (FOV) of 30 ′ diameter
+(0.44 arcsec/pixel). We used the Johnson-CousinsIfilter. Raw
+frames were corrected for dark current and bias, and were flat-
+fielded using the ICAT7 pipeline (Colome & Ribas 2006). Aper-
+7 IEEC Calibration and Analysis Tool.
+Article number, page 7 of 22
+
+A&A proofs:manuscript no. aanda
+Table 1:System parameters for GJ 1214 (top) and GJ 1214 b (bottom).
+Parameter Symbol Value Unit Reference
+MassM ⋆ 0.1820+0.0042
+−0.0041 M⊙ Ma24
+Effective temperatureT ⋆ 3101±43 K Ma24
+Spectral Type Sp.T M4V−Ne14
+Surface gravity∗ logg5.0286 +0.0078
+−0.0088 dex Ma24
+RadiusR ⋆ 0.2162+0.0025
+−0.0024 R⊙ Ma24
+Spot temperature contrast∗∗ ∆Tsp 339+155
+−144 K This work
+372+138
+−182 Ma18
+Rotation period∗∗ Prot 126.9+4.0
+−2.7 days This work
+125±5 Ma18
+Orbital periodP p 1.580404531+0.000000018
+−0.000000017 days Ma24
+Planet-to-star radius ratiopBR p/R⋆ 0.11589±0.00016−Ma24
+Semi-major axis to stellar radius ratioa/R ⋆ 14.97+0.12
+−0.14 −Ma24
+Impact parameterb0.264 +0.020
+−0.023 −Ma24
+Eccentricitye0.0062 +0.0079
+−0.0044 −Ma24
+RV semi-amplitudeK14.38 +0.57
+−0.56 m/s Ma24
+Orbit inclinationi p 88.980+0.094
+−0.085 deg Ma24
+Transit MidpointT c 2455701.413328+0.000066
+−0.000059 days (BJDTDB) Cl21
+Notes. (*) For simplicity, we write log for log10 and ln for loge. (**) The literature values from Mallonn et al. (2018) were used to define the priors
+adopted in the inversion and in the simulations used forUnSPOTTER. The rows labelled “this work” report posterior summaries from the inversion.
+References.Ne14: Newton et al. (2014); Ma18: Mallonn et al. (2018); Cl21: Cloutier et al. (2021); Ma24: Mahajan et al. (2024).
+ture photometry was performed with AstroImageJ (Collins et al.
+2017), selecting an optimal aperture size that minimised the root
+mean square error (RMS) of the resulting relative fluxes.
+MuSCAT2 (Narita et al. 2019) is a four-colour simultaneous
+imaging instrument mounted on the 1.52 m Telescopio Carlos
+Sánchez at the Teide Observatory, Spain. It employs four sepa-
+rate CCDs to simultaneously capture images in four photometric
+bands:g,r,i, andz s. MuSCAT2 uses four Princeton Instruments
+PIXIS 1024B-series CCD cameras (e2v CCD47-10 sensors), one
+per band, providing a 7.4′×7.4 ′ FOV (0.44 arcsec/pixel). The
+raw data were reduced using the MuSCAT2 pipeline (Parviainen
+et al. 2019), which performs dark and flat field calibrations, and
+computes aperture photometry for the target and several stars in
+the field.
+The T90 telescope at Observatorio de Sierra Nevada (OSN)
+is a 90 cm Ritchey-Chrétien telescope equipped with a CCD
+camera Andor Ikon-L DZ936N-BEX2-DD 2k×2k with an FOV
+of 13.2′×13.2 ′ (0.387 arcsec/pixel). Typically, 20 exposures
+were obtained in each of the V and R filters per night, with ex-
+posure times of 150 s and 120 s, respectively. Each CCD frame
+was corrected in a standard way for bias and flat-fielding. We
+performed aperture photometry testing different aperture sizes
+to select the optimal ones.
+In all cases, systematic trends were corrected using differen-
+tial photometry with the brightest reference stars in the field that
+showed no variability. Then, we removed outliers and measure-
+ments affected by poor observing conditions or low signal-to-
+noise ratio using 3-sigma clipping. We binned intra-night points
+into nightly means using inverse-variance weighting, and propa-
+gated uncertainties accordingly. After these quality cuts, we re-
+tained all 22 TJOI-band nights, 29 out of 33 OSN nights and
+all 37 MuSCAT2 nights. We also obtained TJOB-band data (22
+Table 2:Summary of observational datasets used in this study.
+Instrument Period Span (days)N used
+TJO May–Oct 2023 136 22
+OSN Jun–Sep 2023 88 29
+MuSCAT2 May–Oct 2023 139 37
+CARMENES Jun–Sep 2023 94 26
+Notes.The period indicates the approximate monitoring window, and
+the span gives the elapsed time between the first and last observations
+used in the analysis.N used is the number of nightly binned points re-
+tained after quality cuts, reported per band or time series, i.e. effectively
+the number of nights retained.
+nights), but excluded them from the analysis due to insufficient
+precision.
+3.2.2. Spectroscopy
+We also monitored GJ 1214 with the CARMENES instrument,
+a high-resolution, dual-channel spectrograph operating from the
+3.5 m telescope of the Calar Alto Observatory (Quirrenbach et al.
+2018). It simultaneously captures stellar spectra in two wave-
+length ranges: visible-red (520–960 nm) and near-infrared (960–
+1710 nm), with resolving powers of 94 600 and 80 400, respec-
+tively.
+The CARMENES spectra were processed with the
+CARMENEScaracal 8 pipeline (Caballero et al. 2016). We de-
+rived RVs, FWHM, and BIS from the CARMENES data using
+8 CARMENES Reduction And CALibration.
+Article number, page 8 of 22
+
+Ò. Porqueras-León et al.: Correcting stellar contamination in transmission spectroscopy with contemporaneous monitoring
+theraccoon 9 pipeline (Lafarga et al. 2020). The RVs were cor-
+rected for nightly zero-points, instrumental drift, and secular ac-
+celeration (Ribas et al. 2023). Outlier removal was conducted
+using 3-sigma clipping. After quality cuts, we retained 26 out of
+30 CARMENES epochs. To isolate stellar activity signals, we
+subtracted the known planet-induced signal from the RV time
+series using the orbital parameters listed in Table 1. We refer to
+the resulting time series as the RV residuals.
+3.2.3. JWST/NIRSpec transmission spectroscopy
+We use the JWST/NIRSpec G395H transmission spectrum of
+GJ 1214 b from Schlawin et al. (2024), based on two transits
+observed on UT 2023-07-18 and UT 2023-07-19 (MANATEE
+GTO-1185) covering 2.8–5.1µm. These two observed transits
+are hereafter referred to ast 143 andt 145, respectively, where
+the subscript denotes the integer part of the mid-transit time in
+BJDTDB−2460000 days; e.g.t143 hasT c≃143.93 days. Schlawin
+et al. (2024) extracted the spectra with two independent pipelines
+(tshirtandEureka!), hence we adopt the published wave-
+length bins and transit-depth measurements from both reductions
+for comparison with our predicted stellar-contamination correc-
+tions. Visual inspection and the analysis in Schlawin et al. (2024)
+show no evidence for spot-crossing anomalies at the achieved
+precision; we therefore treat stellar heterogeneities as unocculted
+and exclude simulated configurations that would produce spot
+crossings along the transit chord.
+4. Results
+Here, we present the application of our two stellar activity cor-
+rection frameworks—inverse modelling and deep learning—to
+the ground-based monitoring and JWST/NIRSpec observations
+of GJ 1214 b. We analysed two distinct epoch pairs: the ob-
+served JWST/NIRSpec transits (t 143 andt 145), hereafter “ob-
+served epochs”, and, following the same notation, the pair of
+transits closest to the photometric minimum (t191 andt 192), here-
+after “activity maximum epochs”, since under our adopted spot-
+only modelling they correspond to a local activity maximum, i.e.
+a larger relative contribution of the cooler component to the disc-
+integrated flux.
+In order to cover the full JWST/NIRSpec G395H wave-
+length range and to examine the wavelength dependence of the
+correction beyond it, we adapted for use inStarSimtheµ-
+resolved specific-intensity spectraI λ(µ) from the state-of-the-art
+NewEra PHOENIX models (Hauschildt et al. 2025). We used
+spectra computed at 127µvalues for logg=4.5,5.0,5.5 and
+Teff =2300–3500 K, spanning the stellar parameter space re-
+quired for GJ 1214. In the present analysis, we compute cor-
+rections over 0.4–12µm, while comparisons with the published
+JWST/NIRSpec transmission spectrum are restricted to the ob-
+served G395H range.
+4.1. Inverse modelling correction framework
+We used the inverse modelling approach detailed in Section
+2.3 to fit the monitoring multi-band photometry, RVs and spec-
+troscopic activity indicators withStarSim’s inverse mode. We
+adopted the conservative priors informed by previous studies
+and initial tests found in Table 3. The remaining stellar param-
+eters were fixed to the values found in Table 1. In addition, we
+9 Radial velocities and Activity indicators from Cross-COrrelatiON
+with masks.https://github.com/mlafarga/raccoon
+Table 3:Inversion priors.
+Parameter Prior Distribution Units
+ϕsp U(0,360) deg
+θsp U(0,180) deg
+rsp U(0,20) deg
+∆Tsp∗ NTr(372,182,0,900) K
+Prot∗ NTr(125,5,100,150) days
+Notes. (*)NTr(µ,σ,a,b) denotes the truncated normal distribution with
+meanµ, standard deviationσ, lower boundaand upper boundb. For
+stellar parameters, truncated normal priors are based on values found in
+Table 1, truncated within physical and/or model limits.
+Table 4:Spot-number selection using∆AIC relative to the min-
+imum AIC value.
+Nsp ∆AIC
+1 26.683
+2 2.302
+3 2.943
+4 0.000
+5 4.605
+Notes.∆AICBAIC N−minN AICN for the suite of fixed-Nsp inversions.
+fixed parameters that are not constrained by the available mon-
+itoring: the convective shift to CS=0, motivated by the results
+of Liebing et al. (2021), who found no net convective blueshift
+or redshift for stars below∼4000 K; we assumed no differential
+rotation (dΩ =0), and adopted a constant spot-evolution law,
+i.e. each active region was assumed to keep a fixed size through-
+out its lifetime. Each inversion evaluatedN steps =1000 random
+draws of the stellar parameters and ranN iters,SA =7000 SA itera-
+tions. We adoptN sp =4 for our analysis, as favoured by the AIC
+(Table 4). Full diagnostics for ˆℓN,∆ ˆℓ, AIC and BIC are reported
+in Appendix C.
+Figure 3 illustrates the mean spot-covering multiplicity for
+the host star, folded to the hemisphere opposite to the tran-
+sit chord (overlaps add) to account for the degeneracy between
+hemispheres in systems with a spin angle close to 90 deg, and the
+posterior distribution of the fitted global parameters. Here, the
+multiplicity at a given surface element is defined as the average
+number of spots covering that element across the retained inver-
+sion solutions, with overlaps adding. It is therefore not a cov-
+ering fraction and can exceed unity. The corresponding surface
+configurations at the JWST epochs and near activity maximum
+shown in the left and middle panels, respectively, indicate that
+the retained solutions preferentially place spot coverage at high
+latitudes. The posterior distributions of∆T sp andP rot inferred
+by the inversion are consistent with the literature estimates from
+Mallonn et al. (2018) adopted in Table 1 (right panel of Fig. 3).
+The disc-map panels shown in this figure should be inter-
+preted as an ensemble diagnostic, not as uniquely retrieved sur-
+face images. Darker colours indicate larger mean spot-covering
+multiplicity, i.e. surface elements that are covered more often
+by spots across the retained inversion solutions at that epoch;
+they do not encode spot temperature, intensity, or contrast. High
+values in adjacent surface elements can arise from different
+spot placements across solutions and should not be interpreted
+as a single large spot. Because several distinct spot configura-
+Article number, page 9 of 22
+
+A&A proofs:manuscript no. aanda
+tions reproduce the monitoring data comparably well, we further
+summarised the retained inversion ensemble with aK-medoids
+clustering analysis of the full spot configurations. This favours
+K=5 recurring surface families. Figure 4 shows the correspond-
+ing cluster-conditional spot-covering maps for the representative
+epocht 145, illustrating that the inversion does not return a unique
+surface map, but rather a small number of recurrent high-latitude
+spot configurations. The clustering metric,K-selection diagnos-
+tic, and additional representative medoid plots are given in Ap-
+pendix D.
+The multi-band light curves exhibit a coherent low-
+amplitude rotational modulation that is reproduced by the inver-
+sion models across filters, as shown in the left panels of Fig. 5,
+indicating a stable large-scale asymmetry over the monitoring
+baseline. The lower left panel of Fig. 5 also shows the spot
+filling factorff sp predicted by the retained inversion solutions,
+defined as the ratio of the projected area of visible active re-
+gions to the projected stellar disc area. This is therefore a model-
+dependent geometric quantity, computed from the explicit sur-
+face maps at each epoch, and depends on the spot distribution,
+visibility, and projection effects. It should not be directly iden-
+tified with filling factors inferred from other prescriptions, such
+as disc-integrated spectroscopic multi-component fits, which in-
+stead infer flux- or spectrum-weighted component fractions from
+the unresolved stellar spectrum and typically do not explicitly
+model the surface geometry or its associated centre-to-limb and
+chord-versus-disc effects. A direct comparison can be made with
+Mallonn et al. (2018), who also inferred projected spot filling
+factors for GJ,1214 usingStarSim. Their values of approxi-
+mately 5–10% during the more active seasons of their moni-
+toring are somewhat larger than the∼0.5–4% inferred here, al-
+though our value near activity maximum (3.8±1.7% att 191) ap-
+proaches the lower end of their range. Given the different ob-
+serving epochs and the long-term evolution of GJ,1214 reported
+by Mallonn et al. (2018), our results are therefore qualitatively
+consistent with previous evidence for time-variable spot cover-
+age at the percent level. In contrast, the RV residuals, BIS and
+FWHM show comparatively weak variability and are also re-
+produced by the joint fit (Fig. 5, right). Fitting the photometry
+and spectroscopic indicators jointly therefore disfavours solu-
+tions that match the photometric modulation by invoking large
+spot-induced Doppler signals, helping restrict the allowed spot
+latitudes, coverage and temperature contrast.
+4.2. Deep learning correction framework
+We applied theUnSPOTTERcorrection framework described in
+Section 2.4 to GJ 1214, performingNsims =100 000 simulations,
+and drawing stellar and planet parameters from the priors in Ta-
+ble 6. The noise augmentation (Section 2.4.1) was instantiated
+using the actual GJ 1214 data forN noisy =6 realisations. We use
+timestamps in BJD TDB (days). For the temporal normalisation
+(Section 2.4.2), we sett ref =2 460 000 d andt scale =1 d.
+We optimised the NN hyperparameters usingOptunaand
+adopted the best-performing configuration, listed in Table 5. We
+trained an ensemble ofM=20 independently initialised net-
+works for each transit, withD=50 Monte Carlo dropout passes
+for each ofR=1000 realisations of the input sequence.
+Generating the synthetic dataset on a machine equipped with
+two Intel Xeon E5-2690 v4 CPUs (28 physical cores in total) re-
+quired approximately 348 h (14.5 days) for the four epochs con-
+sidered here. TrainingUnSPOTTERon a single NVIDIA Tesla
+V100 GPU required approximately 127 h (5.3 days) for all four
+epochs.
+Table 5:NN hyperparameters selected usingOptuna.
+Parameter Search space Adopted value
+dtemp {4,5,...,16}14
+demb {2,3,...,8}4
+dmodel {16,32,64,96,128}32
+Nblocks {1,2,3,4,5}4
+Nheads {2,3,...,8}4
+dFFN {64,128,256}128
+dropouttr [0,0.5] 8.47×10 −3
+Ndense {1,2,3}2
+ddense {64,128,256,512}128
+dropoutdense [0,0.5] 7.51×10 −2
+η0 LogUniform(10−4,10−3) 4.61×10 −4
+Batch size{32,64,128,256}64
+Notes.Trials withd model modN heads ,0 were pruned to enforce an inte-
+ger attention head dimension. LogUniform(a,b) denotes a distribution
+for which logxis sampled uniformly between logaand logb.
+We evaluateUnSPOTTERon the independent synthetic test
+sets before applying it to the observations. Figure 6 shows
+the wavelength-dependent mean absolute error (MAE) of
+the predicted stellar-contamination spectrum. Across the four
+epoch-specific NN ensembles, the test-set MAE over the 0.4–
+12µm range is 14.29–14.93 ppm, with corresponding root mean
+squared errors (RMSEs) of 26.68–27.22 ppm. The larger errors
+towards the optical reflect the stronger wavelength dependence
+of the stellar-contamination signal in this regime.
+The uncertainty calibration described in Sect. 2.4.4 yields
+multiplicative scale factorssof about 1.9 for the activity-
+minimum epochs (t 143 andt 145) and 2.4 for the activity-
+maximum epochs (t 191 andt 192). These factors adjust the abso-
+lute scale of the uncertainty intervals to achieve 68% coverage
+while preserving their wavelength-dependent structure and case-
+to-case variation. The calibrated intervals remain close to the
+nominal 68% coverage over most of the wavelength range, be-
+coming mildly conservative towards optical wavelengths at the
+activity-maximum epochs, by about 4 percentage points.
+We also tested the dependence of the predictive accuracy on
+the number of independent training simulations and found that
+the adopted training-set size lies in a regime of diminishing re-
+turns: increasing the training sample reduces the mean test MAE
+by an amount comparable to the run-to-run dispersion between
+independently trained networks (Appendix E).
+4.3. Predicted stellar contamination
+Figure 7 shows the posterior summaries of∆p 2(λ) over 0.4–
+12µm for the inversion andUnSPOTTERframeworks, for the
+transits corresponding to the JWST observations (t143,t 145). The
+inferred corrections are epoch dependent. At the observed JWST
+epochs (t 143,t 145), both frameworks predict corrections with
+maximum–minimum differences below∼20 ppm and weakly
+wavelength-dependent across the NIRSpec/G395H range. For
+comparison, Fig. 8 shows the same as Fig. 7 but for transits
+at the epochs near the photometric minimum or local activ-
+ity maximum (t191,t 192). Both frameworks predict larger, struc-
+tured corrections, with a maximum–minimum difference of up
+to∼100 ppm over 2.6–5.5µm. We report pairwise summaries for
+(t143,t 145) because the published JWST/NIRSpec G395H trans-
+Article number, page 10 of 22
+
+Ò. Porqueras-León et al.: Correcting stellar contamination in transmission spectroscopy with contemporaneous monitoring
+Fig. 3:Spot coverage diagnostics att 145 (left) andt 191 (middle) from the inversion. The colour scale shows the mean spot-covering
+multiplicity (expected number of spots covering each surface element, overlaps add) across retained inversion solutions, after folding
+to the hemisphere opposite to the transit chord for visualisation. The transit chord band is overplotted in grey. The annotatedff sp is
+the disc-integrated mean spot filling factor evaluated at that epoch. Right: posterior distributions of the global parameters inferred
+by the inversion.
+Fig. 4:Cluster-conditional spot-covering multiplicity maps for the retained inversion solutions att 145, obtained from theK-medoids
+clustering analysis. The colour at a given surface element indicates the mean spot-covering multiplicity, i.e. the average number of
+spots covering that element across the solutions in the corresponding cluster, after folding to the hemisphere opposite to the transit
+chord (overlaps add). White curves show the spot outlines of the corresponding cluster medoids, and the transit chord band is shown
+in grey. The bottom right panel shows the medoid of the largest cluster att 145. This is a representative discrete spot configuration
+from the dominant surface family, included to contrast with the ensemble coverage maps shown elsewhere.
+mission spectrum combines the two observed transits. We use
+the same paired presentation for (t 191,t 192) for consistency. The
+two transits within each epoch pair yield mutually consistent cor-
+rection posteriors: for a given framework, the posterior means of
+the two transits differ by≲10 ppm, well within the correspond-
+ing credible intervals (see Appendix G for the individual-transit
+corrections). Figure 9 compares the corresponding predictions
+over 2.6–5.5µm to the Schlawin et al. (2024) spectrum (centred
+at zero for visual clarity). The analogous inversion comparison
+is shown in Appendix F (Fig. F.1).
+The principal structures discussed by Schlawin et al. (2024)
+are the increased transit depths near 4.3,µm and 2.8,µm, at-
+tributed to possible CO 2 absorption, together with CH 4 around
+3.3,µm. At the observed epochs, our predicted stellar-activity
+corrections are considerably smaller and more weakly chromatic
+than these features and do not reproduce their spectral structure.
+The predicted correction therefore leaves the candidate molecu-
+lar features essentially unchanged. This does not imply that the
+remaining structure can only have a planetary origin, since noise,
+instrumental systematics, or stellar effects not represented by the
+adopted activity model could still contribute.
+To quantify how precisely the stellar-contamination correc-
+tion can be inferred from the monitoring data, Fig. 10 shows
+σ68, the half-width of the calibrated 68% PI, for theUnSPOTTER
+predictions at the two epoch pairs. Smaller values correspond to
+more tightly constrained corrections. Across the JWST/NIRSpec
+G395H range, the uncertainty of the correction is typically of or-
+der 10–20 ppm or lower for the observed epochs and remains
+at the 20–30 ppm level or lower near activity maximum. The
+mean half-width across this range is 12.4,ppm for the observed
+epoch pair and 19.7,ppm for the activity-maximum pair. Over
+the broader 0.4–12µm range, the uncertainty increases towards
+Article number, page 11 of 22
+
+A&A proofs:manuscript no. aanda
+Fig. 5:Inversion model fits to the monitoring time series. Left: photometric light curves from TJO and OSN (top) and MuSCAT2
+(middle), with the correspondingStarSimspot filling factor (bottom). Right: RV residuals and activity indices from CARMENES.
+Table 6:Simulation intervals for the stellar (top) and planet (bottom) parameters for the deep learning correction framework.
+Stellar parameter Symbol UnitStarSimsimulation interval
+Effective temperaturea T⋆ KN Tr(3101,43,2300,3500)
+Spot temperature contrasta ∆Tsp KN Tr(372,182,0,T ⋆−2300)
+MassM ⋆ M⊙ NTr(0.1820,0.0042,0,1)
+RadiusR ⋆ R⊙ NTr(0.2162,0.0025,0,1)
+Surface gravitya loggdexN Tr(5.0286,0.0088,4.5,5.5)
+Convective shiftb CSCS ⊙ U(0,0.5)
+Differential rotationc dΩdΩ ⊙ 0
+Inclinationd i⋆ deg 90
+Rotation periodP rot daysN Tr(125,5,0,300)
+Number of spotse Nsp − U{2,10}
+Spot radius f rsp deg Exp Tr(N2
+sp/200,1,30)
+Spot longitudeϕ sp degU(0,360)
+Spot colatitudeg θsp deg
+
+90◦ + 180◦
+π [arccosU 1−arccosU 2]
+[0,θ−]∪[θ+,180◦]
+Orbital periodP p daysN Tr (1.580404531,0.000000018,1.5804,1.5805 )
+Planet-to-star radius ratiop− N Tr (0.11589,0.00016,0.1,0.2 )
+Impact parameterb− N Tr (0.264,0.023,0,1 )
+RV semi-amplitudeKm/sN Tr (14.38,0.57,0,100 )
+Transit midpointh Tc days (BJD−2460000)N Tr (−4298.586672,0.000066,−4298.7,−4298.5 )
+Notes. (a) The lower/upper limits are chosen since the stellar atmosphere models haveT⋆ ranging from 2300 K to 3500 K and loggfrom 4.5 dex to
+5.5 dex. (b) In units of the solar convective shift CS⊙. (c) In units of the solar differential rotation dΩ⊙. (d) Defined from 0◦ (pole-on) to 180◦ (opposite
+pole-on), withi ⋆ =90 ◦ corresponding to equator-on. (e)U{a,b}denotes a discrete uniform distribution over the integersa,...,b,b≥a. This is
+distinct fromU(a,b), a continuous uniform distribution over the real interval (a,b). (f) ExpTr(λ,a,b) denotes the truncated exponential distribution
+with rate parameterλ, lower bounda, and upper boundb, i.e. with PDFf(x)= λe−λ(x−a)
+1−e−λ(b−a) ,a≤x≤b. (g) U1,2∼U(0,1), and the subscript denotes
+truncation to avoid spot crossings, withθ ± = 180◦
+π arccos(b∓p)±(r sp +δ), whereδis a small angular margin (accounting for theStarSimgrid
+resolution) to ensure the spot and planet are not assigned to the same surface cell. (h) Epoch based on Cloutier et al. (2021).
+Article number, page 12 of 22
+
+Ò. Porqueras-León et al.: Correcting stellar contamination in transmission spectroscopy with contemporaneous monitoring
+Fig. 6:UnSPOTTERvalidation on test set simulations. Mean ab-
+solute error of the predicted stellar-contamination spectrum as a
+function of wavelength.
+Fig. 7:Activity correction∆p 2(λ) over 0.4–12µm for the ob-
+served JWST epochs (t143,t 145).
+the blue edge, reaching∼35 ppm for the observed epochs and
+∼60 ppm near activity maximum close toλ∼0.4µm. From
+roughlyλ≳1µm onwards, the correction precision is below 30
+ppm.
+5. Discussion
+The inversion andUnSPOTTERyield consistent corrections for
+GJ 1214. This agreement provides a robustness check: the two
+approaches are sensitive to different modelling risks (discrete
+surface-family assumptions for the inversion; training domain
+coverage/generalisation for the NNs), so their agreement reduces
+the likelihood that the inferred chromatic structure is method-
+specific.
+The two methods should therefore be interpreted as comple-
+mentary tools with different roles, rather than as interchangeable
+estimators. The inversion provides interpretability (maps and
+physical parameters) and diagnostics when fits or assumptions
+fail.UnSPOTTERnaturally marginalises over a broader activity
+Fig. 8:Same as Fig. 7, but for epochs near activity maximum
+(t191,t 192).
+parameter set defined by the simulation priors, and is designed
+to provide the sharper predictive correction once the target is
+well represented by the training domain. Using both therefore
+separatesexplanation(what surface maps best explain the data,
+and what∆p 2 follows) fromprediction(averaging over many
+surface maps consistent with stars and monitorings like these,
+what∆p 2 should we expect), and flags regimes where either the
+monitoring is insufficient or the NNs are out-of-distribution.
+The uncertainty bands of the two frameworks also differ in a
+meaningful way. In the inversion, the quoted interval is obtained
+from the spread of∆p 2(λ) across all retained surface-map solu-
+tions that reproduce the monitoring comparably well. Because
+the inversion is formulated at the level of explicit spot configura-
+tions, this spread reflects not only the uncertainty in the contam-
+ination spectrum itself, but also residual degeneracies among the
+reconstructed surface maps within the adopted four-spot model,
+as well as possible mismatch between that simplified model and
+the true stellar photosphere. Different four-spot configurations
+can fit the monitoring similarly well while still producing some-
+what different corrections, and this effect can be amplified if the
+true surface is more complex than the adopted model, so that sev-
+eral approximate four-spot reconstructions reproduce the moni-
+toring comparably well. We therefore interpret the inversion in-
+terval as reflecting both map-level degeneracy and model uncer-
+tainty within the adopted inversion framework. These map-level
+degeneracies thus broaden the inversion interval. The choice of
+Nsp =4 is deliberate: it provides a practical balance between fit
+quality and model complexity, while avoiding the stronger de-
+generacies and convergence difficulties that arise for a higher
+number of spots.UnSPOTTER, by contrast, is trained to predict
+∆p2(λ) directly from the monitoring observables, and can there-
+fore marginalise more efficiently over surface-configuration dif-
+ferences that are weakly constrained by the data but have limited
+relevance for the final correction. In our application this leads
+to narrower posterior intervals, suggesting that the NN provides
+a more precise predictive estimate of the stellar-contamination
+correction while remaining consistent with the inversion at the
+level of the posterior means.
+The results also show a clear epoch dependence: the cor-
+rections are smallest at the observed epochs (t 143,t 145), near a
+photometric maximum, and largest near the photometric min-
+imum (t 191,t 192). This is expected as, under our adopted two-
+Article number, page 13 of 22
+
+A&A proofs:manuscript no. aanda
+Fig. 9:Comparison of predicted activity corrections over the JWST/NIRSpec G395H range with the transmission spectrum from
+Schlawin et al. (2024) (bothtshirtandEureka!reductions), obtained usingUnSPOTTER. Left: observed epochs (t 143,t 145). Right:
+epochs near activity maximum (t 191,t 192). The same published JWST/NIRSpec transmission spectrum is shown in both panels.
+Curves and data are centred around zero for visual clarity.
+Fig. 10:Half-width of the central 68% predictive interval for the
+UnSPOTTERstellar-contamination corrections.
+component model, a photometric maximum corresponds to
+a smaller contribution of the cooler component to the disc-
+integrated flux, reducing the mismatch between the transit chord
+and the disc average and hence yielding smaller∆p 2.
+At the observed JWST epochs, the predicted corrections
+across the NIRSpec/G395H range remain well below the scale of
+the tentative spectral features reported by Schlawin et al. (2024),
+suggesting that stellar spots are unlikely to be the dominant ori-
+gin of those features in the published transmission spectrum.
+In contrast, if the observations had been scheduled at activity
+maximum, the predicted peak-to-peak amplitudes are compara-
+ble to, and in places exceed, the reported spectral structure. Cru-
+cially, this highlights that visit timing relative to the activity cy-
+cle can determine whether stellar contamination is negligible or
+retrieval-limiting without an explicit correction.
+The largest differences among correction frameworks occur
+towards the blue edge of our plotted range (λ∼0.4µm), particu-
+larly near activity maximum. Although this regime lies closer in
+wavelength to the monitoring photometry than the mid-infrared
+does, the bluest monitoring bands are also the noisiest and we ex-
+cluded theB-band data from the analysis. In addition, spot con-
+trast becomes more pronounced towards shorter wavelengths,
+so a given uncertainty or bias in the parameters that control it
+produces a larger effect on the inferred corrections. This regime
+is therefore plausibly more affected by modelling systematics
+and simulation–reality mismatch. This is consistent with recent
+JWST observations of TOI-3884, where empirical M-dwarf spot
+contrasts are reproduced by 1D atmosphere models atλ≳1µm
+but are underestimated at shorter wavelengths (Murray et al.
+2026).
+The quality of the inferred stellar-contamination corrections
+can be improved mainly through better physical inputs and
+better monitoring. On the modelling side, the physical accu-
+racy of the corrections will improve as more realistic specific-
+intensity libraries and active-region spectra become available,
+in particular improved centre-to-limb behaviour and magnetic-
+region contrasts from modern 3D MHD calculations. On the ob-
+servational side, denser and more contemporaneous monitoring
+would improve both approaches. In particular, better rotational-
+phase coverage and denser sampling close to the transmission-
+spectroscopy epochs would constrain the activity state more
+tightly, while improved precision and wavelength coverage in
+the bluest photometric bands would help at short wavelengths,
+where the corrections are most sensitive to spot contrast. Com-
+bining multi-band photometry with high-quality spectroscopic
+activity indicators remains especially valuable for reducing the
+main activity degeneracies, such as between spot surface cover-
+age and temperature contrast. Extensions that include occulted
+heterogeneities, when warranted by the data quality, would
+also broaden the applicability of the framework. In this sense,
+the inversion is useful for diagnosing which aspects of the
+activity model and monitoring are weakly constrained, while
+UnSPOTTERis particularly well-suited to delivering precise cor-
+rections once trained within an appropriate simulation domain.
+The performance ofUnSPOTTERshould not be expected to
+be identical for all stars without target-specific adaptation. In
+the implementation presented here, the simulation priors, stel-
+Article number, page 14 of 22
+
+Ò. Porqueras-León et al.: Correcting stellar contamination in transmission spectroscopy with contemporaneous monitoring
+lar atmosphere models, observing cadence and uncertainties,
+and parts of the preprocessing are tailored to GJ 1214. Appli-
+cation to another target would therefore require a new simu-
+lation set spanning the relevant stellar and activity parameters,
+modelling the available monitoring, retraining of the network,
+and validation and calibration analogous to those performed
+here. The achievable performance is likely to depend on spec-
+tral type, on the information content of the monitoring data, and
+on how well the state-of-the-art physical stellar models describe
+the star. Systems with coherent rotational modulation and good
+rotational-phase coverage in multiple photometric bands and/or
+complementary high-resolution spectroscopy should be the most
+favourable, whereas rapidly evolving activity, flares, weak ro-
+tational modulation, or substantial simulation–observation mis-
+match will make the inference more difficult.
+6. Conclusions
+In this work, we present two frameworks, inversion and
+UnSPOTTER, that use ground-based monitoring around transmis-
+sion spectroscopy observations to produce epoch-specific chro-
+matic corrections to stellar contamination, with uncertainties that
+can be propagated to atmospheric retrievals.
+We applied these frameworks to the planetary system hosted
+by GJ 1214. We recover consistent corrections at the JWST
+epochs using both methodologies, which clearly suggest that
+observations occurred at a favourable activity phase with low
+chromatic contamination. ForUnSPOTTER, the inferred stellar-
+contamination corrections can be constrained to a precision of
+∼15 ppm across the JWST/NIRSpec G395H range for the ob-
+served epochs. The uncertainty increases towards the blue edge
+of the broader 0.4–12µm range, reaching about 35 ppm for
+the observed epochs and about 60 ppm near activity maximum
+aroundλ∼0.4µm, while from roughlyλ≳1µm onwards it
+remains below the 30-ppm level.
+A counterfactual evaluation suggests that the same system
+would imprint strongly chromatic contamination that could plau-
+sibly mimic atmospheric features near the local activity max-
+imum (photometric minimum), highlighting the key value of
+monitoring-informed scheduling and activity correction to ac-
+curately interpret transmission spectra.
+The inversion yields a set of interpretable surface maps con-
+sistent with the monitoring data, rather than a single unique
+reconstruction. In particular, the clustering analysis shows that
+the retained inversion solutions organise into a small number
+of recurrent surface families, providing a useful diagnostic of
+the remaining map degeneracy and of which aspects of the in-
+ferred stellar-surface structure are robust. For GJ 1214, these re-
+current families are high-latitude, indicating that while the exact
+spot map remains non-unique, the broader stellar-surface struc-
+ture is more robustly constrained.UnSPOTTERmarginalises over
+a broader ensemble of spot configurations learned from simu-
+lations, which makes the predicted correction less sensitive to
+nuisance surface-map degeneracies that are poorly constrained
+by the monitoring data but have limited impact on the inferred
+correction. The two methods are complementary: the inversion
+provides physical interpretability; the NNs provide sharper con-
+straints on the stellar contamination corrections. The inversion
+can also inform the simulation priors and noise model used to
+train the NNs. In our target- and epoch-specific implementation,
+the NNs carry an upfront training cost, but then enable rapid in-
+ference. This makesUnSPOTTERparticularly well-suited to scal-
+able uses (e.g. across many epochs/targets within a trained do-
+main).
+This methodology can potentially be extended to other ac-
+tive stars with rotational modulation. Such applications would
+require target-specific simulations, retraining, and validation
+tailored to the available monitoring data. With these condi-
+tions, given photometric and/or spectroscopic monitoring around
+transmission spectroscopy observations, the framework may de-
+liver activity-level forecasts for scheduling and consistent cor-
+rections for atmospheric analyses, supporting high-precision ex-
+oplanet atmosphere characterisation for JWST-class transmis-
+sion spectroscopy and future missions (e.g.Ariel).
+Acknowledgements.This publication has been made possible by funding from
+the European Research Council (ERC) under the European Union’s Hori-
+zon Europe programme (ERC Advanced Grant SPOTLESS; no. 101140786).
+Views and opinions expressed are however those of the author(s) only and
+do not necessarily reflect those of the European Union or the European
+Research Council. Neither the European Union nor the granting author-
+ity can be held responsible for them. Financial support has also been pro-
+vided by Spanish grants PID2020-120375GB-I00, PID2021-125627OB-C31,
+PID2022-137241NB-C43, PID2023-150491NB-I00, and PID2024-158486OB-
+C31 funded by MCIU/AEI/10.13039/501100011033 and by “ERDF A way of
+making Europe”, by MCIU/AEI grant CNS2022-136050, and by the Generali-
+tat de Catalunya via SGR 01526/2021 and the CERCA programme. This work
+was also partly supported by the Spanish program Unidad de Excelencia María
+de Maeztu CEX2020-001058-M awarded to ICE and Severo Ochoa CEX2021-
+001131-S awarded to IAA, financed by MCIN/AEI/10.13039/501100011033,
+and by the MaX-CSIC Excellence Award MaX4-SOMMA-ICE, and by the
+Marie Skłodowska-Curie Actions grant agreement No 101149286 (INCITE). We
+thank Calar Alto Observatory for allocation of director’s guaranteed time to this
+programme (DGT.24B.328). Data were partly collected with the 90-cm telescope
+at Sierra Nevada Observatory (OSN), operated by the IAA-CSIC. The Joan Oró
+Telescope (TJO) at the Montsec Observatory (OdM) is owned by the Catalan
+Government and operated by the Institute of Space Studies of Catalonia (IEEC).
+This article is based on observations made with the MuSCAT2 instrument, devel-
+oped by ABC, at Telescopio Carlos Sánchez operated on the island of Tenerife
+by the IAC in the Spanish Observatorio del Teide. This work is partly supported
+by JSPS KAKENHI Grant Numbers JP24H00017, JP24K00689, JP24K17083,
+JP25K24620, JP26H01402, JP26K00755, and JSPS Grant-in-Aid for JSPS Fel-
+lows Grant Number JP24KJ0241. We acknowledge financial support from the
+Agencia Estatal de Investigación of the Ministerio de Ciencia e Innovación
+MCIN/AEI/10.13039/501100011033 and the ERDF “A way of making Europe”
+through projects PID2021-125627OB-C32 and PID2024-158486OB-C32. This
+work is supported by the European Union (ERC AdvG SPEAR, GA 101200674).
+Views and opinions expressed are however those of the authors only and do
+not necessarily reflect those of the European Union or the European Research
+Council. Neither the European Union nor the granting authority can be held re-
+sponsible for them. This work is part of the first author’s doctoral thesis, within
+the framework of the Doctoral Program in Physics at the Universitat Autònoma
+de Barcelona. The data production, processing and analysis tools for this paper
+have been developed, implemented and operated in collaboration with the Port
+d’Informació Científica (PIC) data center. PIC is maintained through a collab-
+oration agreement between the Institut de Física d’Altes Energies (IFAE) and
+the Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+(CIEMAT).
+References
+Abadi, M., Agarwal, A., Barham, P., et al. 2016, arXiv e-prints,
+arXiv:1603.04467
+Ahrer, E.-M., Radica, M., Piaulet-Ghorayeb, C., et al. 2025, ApJ, 985, L10
+Akaike, H. 1974, IEEE Transactions on Automatic Control, 19, 716
+Akiba, T., Sano, S., Yanase, T., Ohta, T., & Koyama, M. 2019, arXiv e-prints,
+arXiv:1907.10902
+Anglada-Escudé, G., Amado, P. J., Barnes, J., et al. 2016, Nature, 536, 437
+Anglada-Escudé, G., Rojas-Ayala, B., Boss, A. P., Weinberger, A. J., & Lloyd,
+J. P. 2013, A&A, 551, A48
+Ardévol Martínez, F., Min, M., Kamp, I., & Palmer, P. I. 2022, A&A, 662, A108
+Astropy Collaboration, Price-Whelan, A. M., Lim, P. L., et al. 2022, ApJ, 935,
+167
+Baroch, D., Morales, J. C., Ribas, I., et al. 2020, A&A, 641, A69
+Beeck, B., Schüssler, M., Cameron, R. H., & Reiners, A. 2015, A&A, 581, A42
+Berta, Z. K., Charbonneau, D., Bean, J., et al. 2011, ApJ, 736, 12
+Bhatia, T. S., Panja, M., Cameron, R. H., & Solanki, S. K. 2025, A&A, 693,
+A264
+Boisse, I., Bonfils, X., & Santos, N. C. 2012, A&A, 545, A109
+Article number, page 15 of 22
+
+A&A proofs:manuscript no. aanda
+Branch, M. A., Coleman, T. F., & Li, Y . 1999, SIAM Journal on Scientific Com-
+puting, 21, 1
+Caballero, J. A., Guàrdia, J., López del Fresno, M., et al. 2016, in Society
+of Photo-Optical Instrumentation Engineers (SPIE) Conference Series, V ol.
+9910, Observatory Operations: Strategies, Processes, and Systems VI, ed.
+Peck, A. B., Seaman, R. L., & Benn, C. R., 99100E
+Cáceres, C., Kabath, P., Hoyer, S., et al. 2014, A&A, 565, A7
+Carnall, A. C. 2017, arXiv e-prints, arXiv:1705.05165
+Chakraborty, H., Lendl, M., Akinsanmi, B., Petit dit de la Roche, D. J. M., &
+Deline, A. 2024, A&A, 685, A173
+Charbonneau, D., Berta, Z. K., Irwin, J., et al. 2009, Nature, 462, 891
+Charbonneau, D., Brown, T. M., Latham, D. W., & Mayor, M. 2000, ApJ, 529,
+L45
+Charbonneau, D., Brown, T. M., Noyes, R. W., & Gilliland, R. L. 2002, ApJ,
+568, 377
+Chollet, F. et al. 2018, Keras: The Python Deep Learning library, Astrophysics
+Source Code Library, record ascl:1806.022
+Cloutier, R., Charbonneau, D., Deming, D., Bonfils, X., & Astudillo-Defru, N.
+2021, AJ, 162, 174
+Collins, K. A., Kielkopf, J. F., Stassun, K. G., & Hessman, F. V . 2017, AJ, 153,
+77
+Colomé, J., Casteels, K., Ribas, I., & Francisco, X. 2010, in Society of Photo-
+Optical Instrumentation Engineers (SPIE) Conference Series, V ol. 7740, Soft-
+ware and Cyberinfrastructure for Astronomy, ed. Radziwill, N. M. & Bridger,
+A., 77403K
+Colome, J. & Ribas, I. 2006, in IAU Special Session, V ol. 6, IAU Special Session,
+11
+Cracchiolo, G., Micela, G., Morello, G., & Peres, G. 2021a, MNRAS, 507, 6118
+Cracchiolo, G., Micela, G., & Peres, G. 2021b, MNRAS, 501, 1733
+Cristo, E., Faria, J. P., Santos, N. C., et al. 2025, A&A, 702, A84
+Earl, N., Tollerud, E., O’Steen, R., et al. 2025, astropy/specutils: v2.1.0
+Edwards, B., Changeat, Q., Mori, M., et al. 2021, AJ, 161, 44
+Espinoza, N., Kossakowski, D., & Brahm, R. 2019, MNRAS, 490, 2262
+Fortney, J. J., Shabram, M., Showman, A. P., et al. 2010, ApJ, 709, 1396
+Gal, Y . & Ghahramani, Z. 2015, arXiv e-prints, arXiv:1506.02142
+Gillon, M., Demory, B.-O., Madhusudhan, N., et al. 2014, A&A, 563, A21
+Gillon, M., Triaud, A. H. M. J., Demory, B.-O., et al. 2017, Nature, 542, 456
+Harpsøe, K. B. W., Hardis, S., Hinse, T. C., et al. 2013, A&A, 549, A10
+Hauschildt, P. H., Barman, T., Baron, E., Aufdenberg, J. P., & Schweitzer, A.
+2025, A&A, 698, A47
+Herrero, E., Ribas, I., Jordi, C., et al. 2016, A&A, 586, A131
+Husser, T. O., Wende-von Berg, S., Dreizler, S., et al. 2013, A&A, 553, A6
+Johnson, L. J., Norris, C. M., Unruh, Y . C., et al. 2021, MNRAS, 504, 4751
+Kaufman, L. & Rousseeuw, P. J. 1990, Finding Groups in Data: An Introduction
+to Cluster Analysis (John Wiley & Sons)
+Keers, R. E., Shapiro, A. I., Kostogryz, N. M., et al. 2024, ApJ, 977, L7
+Kempton, E. M.-R., Bean, J. L., Louie, D. R., et al. 2018, PASP, 130, 114401
+Kempton, E. M.-R., Zhang, M., Bean, J. L., et al. 2023, Nature, 620, 67
+Kingma, D. P. & Ba, J. 2014, arXiv e-prints, arXiv:1412.6980
+Kipping, D. M. 2013, MNRAS, 435, 2152
+Kipping, D. M. 2016, MNRAS, 455, 1680
+Kostogryz, N., Shapiro, A. I., Witzke, V ., et al. 2026, A&A, submitted
+Kreidberg, L. 2015, Publications of the Astronomical Society of the Pacific, 127,
+1161
+Kreidberg, L., Bean, J. L., Désert, J.-M., et al. 2014, Nature, 505, 69
+Lafarga, M., Ribas, I., Lovis, C., et al. 2020, A&A, 636, A36
+Lakshminarayanan, B., Pritzel, A., & Blundell, C. 2016, arXiv e-prints,
+arXiv:1612.01474
+Liebing, F., Jeffers, S. V ., Reiners, A., & Zechmeister, M. 2021, A&A, 654, A168
+Lim, O., Benneke, B., Doyon, R., et al. 2023, ApJ, 955, L22
+Madhusudhan, N. 2019, ARA&A, 57, 617
+Mahajan, A. S., Eastman, J. D., & Kirk, J. 2024, ApJ, 963, L37
+Mallonn, M., Herrero, E., Juvan, I. G., et al. 2018, A&A, 614, A35
+Mayor, M. & Queloz, D. 1995, Nature, 378, 355
+McCullough, P. R., Crouzet, N., Deming, D., & Madhusudhan, N. 2014, ApJ,
+791, 55
+Moré, J. J. 1978, in Lecture Notes in Mathematics, Berlin Springer Verlag, V ol.
+630, 105–116
+Murray, C. A., Garcia, L., Rackham, B. V ., et al. 2026, arXiv e-prints,
+arXiv:2603.15414
+Narita, N., Fukui, A., Ikoma, M., et al. 2013, ApJ, 773, 144
+Narita, N., Fukui, A., Kusakabe, N., et al. 2019, Journal of Astronomical Tele-
+scopes, Instruments, and Systems, 5, 015001
+Nascimbeni, V ., Mallonn, M., Scandariato, G., et al. 2015, A&A, 579, A113
+Newton, E. R., Charbonneau, D., Irwin, J., et al. 2014, AJ, 147, 20
+Nikolaou, N., Waldmann, I. P., Tsiaras, A., et al. 2023, RAS Techniques and
+Instruments, 2, 695
+Norris, C. M., Unruh, Y . C., Witzke, V ., et al. 2023, MNRAS, 524, 1139
+Ohno, K., Schlawin, E., Bell, T. J., et al. 2025, ApJ, 979, L7
+Parviainen, H., Tingley, B., Deeg, H. J., et al. 2019, A&A, 630, A89
+Perger, M., Anglada-Escudé, G., Baroch, D., et al. 2023, A&A, 672, A118
+Pinhas, A., Rackham, B. V ., Madhusudhan, N., & Apai, D. 2018, MNRAS, 480,
+5314
+Quirrenbach, A., Amado, P. J., Ribas, I., et al. 2018, in Society of Photo-Optical
+Instrumentation Engineers (SPIE) Conference Series, V ol. 10702, Ground-
+based and Airborne Instrumentation for Astronomy VII, ed. Evans, C. J.,
+Simard, L., & Takami, H., 107020W
+Rackham, B., Espinoza, N., Apai, D., et al. 2017, ApJ, 834, 151
+Rackham, B. V ., Apai, D., & Giampapa, M. S. 2018, ApJ, 853, 122
+Rackham, B. V ., Apai, D., & Giampapa, M. S. 2019, AJ, 157, 96
+Rackham, B. V ., Espinoza, N., Berdyugina, S. V ., et al. 2023, RAS Techniques
+and Instruments, 2, 148
+Ribas, I., Reiners, A., Zechmeister, M., et al. 2023, A&A, 670, A139
+Rosich, A., Herrero, E., Mallonn, M., et al. 2020, A&A, 641, A82
+Schlawin, E., Ohno, K., Bell, T. J., et al. 2024, ApJ, 974, L33
+Schwarz, G. 1978, Annals of Statistics, 6, 461
+Seager, S. & Sasselov, D. D. 2000, ApJ, 537, 916
+Shapiro, A. I., Seager, S., Solanki, S. K., et al. 2026, ApJ, 1008, 24
+Sing, D. K., Pont, F., Aigrain, S., et al. 2011, MNRAS, 416, 1443
+Smitha, H. N., Shapiro, A. I., Witzke, V ., et al. 2025, ApJ, 978, L13
+Sumida, V . Y . D., Estrela, R., Swain, M., & Valio, A. 2026, A&A, 706, A281
+Thompson, A., Biagini, A., Cracchiolo, G., et al. 2024, ApJ, 960, 107
+Tinetti, G., Drossart, P., Eccleston, P., et al. 2018, Experimental Astronomy, 46,
+135
+Tinetti, G., Vidal-Madjar, A., Liang, M.-C., et al. 2007, Nature, 448, 169
+Tsiaras, A., Waldmann, I. P., Tinetti, G., Tennyson, J., & Yurchenko, S. N. 2019,
+Nature Astronomy, 3, 1086
+Vaswani, A., Shazeer, N., Parmar, N., et al. 2017, arXiv e-prints,
+arXiv:1706.03762
+Virtanen, P., Gommers, R., Oliphant, T. E., et al. 2020, Nature Methods, 17, 261
+Witzke, V ., Shapiro, A. I., Kostogryz, N. M., et al. 2022, ApJ, 941, L35
+Zechmeister, M., Reiners, A., Amado, P. J., et al. 2018, A&A, 609, A12
+Article number, page 16 of 22
+
+Ò. Porqueras-León et al.: Correcting stellar contamination in transmission spectroscopy with contemporaneous monitoring
+Appendix A: Preparation of synthetic spectra for
+StarSim
+The main steps of the procedure that we implemented to adapt
+the synthetic spectra to the instrument’s characteristics and the
+desired spectral channels are:
+Appendix A.1: Spectral degradation to instrumental
+resolution
+We degrade each specific intensity spectrumI λ(λ,µ) to the in-
+strument’s wavelength-dependent resolving powerR(λ) using a
+Gaussian line-spread function (LSF). With
+R(λ)= λ
+FWHMLSF(λ), σ λ(λ)= FWHMLSF(λ)
+2
+√
+2 ln 2
+,(A.1)
+thecontinuousconvolution targeted at grid pointλ j is
+eIλ(λ j,µ)=
+Z
+Iλ(λ′,µ) exp
+−(λ′−λ j)2
+2σ2
+j
+ dλ′
+Z
+exp
+−(λ′−λ j)2
+2σ2
+j
+ dλ′
+,(A.2)
+whereσ j Bσ λ(λ j).
+On thediscrete, non-uniformgrid{λ k}, we approximate the
+integrals by Riemann sums over a finite windowW j ={k:
+|λk−λ j|≤3σ j}:
+eIλ(λ j,µ)=
+X
+k∈W j
+Iλ(λk,µ) exp
+−(λk−λ j)2
+2σ2
+j
+ ∆λk
+X
+k∈W j
+exp
+−(λk−λ j)2
+2σ2
+j
+ ∆λk
+,(A.3)
+with∆λ k the local pixel width (e.g.∆λ k ≈ 1
+2(λk+1−λ k−1) or,
+if available, the tabulated bin widthw k =λ +
+k −λ−
+k ). To avoid
+applying an undersampled kernel, if the local width in pixels
+σpix,j B σ j
+∆λ j
+,∆λ j≈ 1
+2(λ j+1−λ j−1),(A.4)
+falls below 0.5, we leave the point unchanged. Outside the tab-
+ulatedR(λ) range we fix FWHM LSF to the edge value (constant
+beyond the blue/red edges).
+This procedure is applied independently for eachµvalue.
+Appendix A.2: Flux-conserving resampling to instrumental
+sampling
+After degradation, we resample eIλ(λ,µ) from the
+model grid to the instrumental sampling using the
+FluxConservingResamplerclass ofspecutils(Earl
+et al. 2025; Astropy Collaboration et al. 2022), which imple-
+ments the SpectRes flux-conserving algorithm (Carnall 2017).
+In the sense of their Eq. (1), each input value eIλ(λ j,µ) is the
+bin-averaged specific intensity across the input pixel with edges
+[λ−
+j,λ +
+j ],w j Bλ +
+j−λ−
+j.(A.5)
+For an output pixeliwith edges [λ −
+i,λ +
+i ] define the geometric
+overlap
+∆λi j =max 0,min(λ +
+j,λ +
+i )−max(λ −
+j,λ−
+i ),(A.6)
+and the covered widthW i B P
+j ∆λi j. The resampled intensity is
+the overlap-weighted average of the input bin-averaged intensi-
+ties,
+Isamp
+λ (λi,µ)=
+P
+jeIλ(λ j,µ)∆λ i j
+P
+j ∆λi j
+,(A.7)
+which corresponds to Eq. (3) of Carnall (2017) upon identifying
+∆λi j =P i j wi and swappingi↔j.
+Appendix A.3: Binning to published transmission-spectrum
+channels
+Given channel centresλ mid
+m and widths∆λ bin
+m , we form edges
+λmin
+m =λ mid
+m − 1
+2∆λbin
+m , λ max
+m =λ mid
+m + 1
+2∆λbin
+m ,(A.8)
+and compute the channel-averaged specific intensity from the
+instrument-sampled spectrum:
+⟨Iλ⟩m(µ)= 1
+λmaxm −λ minm
+Z λmax
+m
+λminm
+Isamp
+λ (λ,µ)dλ,(A.9)
+evaluated numerically by trapezoidal integration over the instru-
+ment grid. Bins whose edges are not fully contained in the model
+coverage are discarded.
+Appendix A.4: Densified theoretical sampling
+To plot smooth theoretical curves while remaining consistent
+with the observed channels, we insertNuniformly spaced in-
+termediate bins between consecutive published binsmandm+1
+by linearly interpolating both centres and widths:
+λmid
+m,j =(1−α j)λ mid
+m +α jλmid
+m+1,(A.10)
+∆λbin
+m,j =(1−α j)∆λ bin
+m +α j ∆λbin
+m+1,(A.11)
+α j = j
+N+1 ,j=1,...,N.(A.12)
+Outside the published range we extend with equispaced cen-
+tres (edge spacing) and fixed widths (edge width). For each bin,
+we compute the channel-averaged intensity via the same proce-
+dure defined above.
+Appendix B: On the choice of limb darkening laws
+In Figures B.1 and B.2 we show the difference between the ac-
+tivity corrections derived with the three-parameter and quadratic
+LD laws for the inversion framework.
+For each visit, we compare the two LD prescriptions on a
+solution-by-solution basis. That is, for each retained inversion
+solution, corresponding to the same underlying stellar-surface
+configuration, we recompute the correction spectrum∆p 2(λ)
+with both LD laws and compute the difference.
+Over the full analysed 0.4–12µm range, the combined mean
+difference remains small and 0 lies within the 68% interval at
+every wavelength bin for both epoch pairs. However, the 68%
+interval broadens towards the blue edge of the range, reach-
+ing several tens of ppm nearλ∼0.4µm. In contrast, over the
+JWST/NIRSpec G395H range (2.8–5.1µm), both the mean dif-
+ference and the 68% interval remain small: the combined mean
+difference stays below 0.8 ppm for the observed epochs and be-
+low 0.1 ppm near activity maximum, while the corresponding
+68% intervals remain at the level of only a few ppm half-width.
+Article number, page 17 of 22
+
+A&A proofs:manuscript no. aanda
+These values are negligible compared to the tens-of-ppm
+scale of the reported spectral structure in the JWST transmis-
+sion spectrum (e.g. an in–out CO 2 band depth difference of
+58±15 ppm; Schlawin et al. 2024). We therefore conclude that,
+for GJ 1214 b and our observing geometry (b≃0.26), the choice
+between these two LD prescriptions has a negligible impact on
+the inferred stellar-contamination corrections in the NIRSpec
+G395H bandpass for this particular target, although larger effects
+are expected towardsλ∼0.4µm and when using the quadratic
+law for high-precision transmission spectroscopy, particularly
+for planets with moderate to high impact parameters (b≳0.5)
+(Keers et al. 2024).
+Appendix C: Spot-number selection diagnostics
+In regular nested models, the likelihood-ratio statistic 2∆ ˆℓis
+asymptoticallyχ 2-distributed with degrees of freedom equal to
+the number of additional free parameters. Spot models are non-
+regular (e.g. boundary solutions such asr sp →0 and multi-
+modal likelihood surfaces), and our optimisation is stochastic;
+therefore we use 2∆ˆℓas a heuristic diagnostic of fit improvement
+rather than as a formal hypothesis test.
+AIC is prediction-oriented, whereas BIC applies a stronger
+complexity penalty scaling with lnn f , wheren f is the sample
+size. We computen f as the number of fitted data points entering
+the likelihood. Because our monitoring data are time series with
+correlated residuals and shared systematics across indicators,n f
+should be interpreted as an effective sample size; hence, in this
+regime, BIC tends to be conservative. We therefore selectedN sp
+based on AIC and used BIC and 2∆ˆℓas diagnostic cross-checks.
+The AIC is defined as
+AICN =2k N−2 ˆℓN,(C.1)
+where ˆℓN is the maximised log-likelihood of theN-spot model
+andk N is its number of free parameters, and the Bayesian infor-
+mation criterion (BIC) as
+BICN =k N lnn f−2 ˆℓN.(C.2)
+In ourStarSimsetup all non-spot parameters are common
+to all spot-count families. Substitutingk N =k 0 +3Ninto AIC
+and BIC gives
+AICN =2k 0 +
+
+6N−2 ˆℓN
+
+| {z }
+AIC⋆
+N
+,(C.3)
+BICN =k 0 lnn f +
+
+3Nlnn f−2 ˆℓN
+
+| {z }
+BIC⋆
+N
+.(C.4)
+The additive constants 2k0 andk 0 lnn f are identical for all spot-
+count families and therefore cancel in model comparisons. We
+thus report AIC⋆
+N and BIC⋆
+N, and their differences relative to the
+minimum acrossN sp.
+For GJ 1214, we usen f =306 (the total number of fit-
+ted data points across all time series). The resulting diagnostics
+(ˆℓN,∆ ˆℓ,2∆ ˆℓ,AIC⋆,BIC⋆) are listed in Table C.1.
+The diagnostics show the expected trade-offbetween fit qual-
+ity and complexity: AIC⋆ is minimised atN sp =4, whereas BIC⋆
+favoursN sp =2 because of its stronger complexity penalty. Since
+our goal is predictive performance and BIC is likely overly con-
+servative in this non-regular, time-correlated setting, we adopt
+AIC as the primary criterion and therefore useN sp =4 in the
+main analysis.
+Appendix D: Clustering analysis of inversion
+surface-map solutions
+The inversion produces an ensemble ofNsol retained spot config-
+urations that fit the monitoring data comparably well. To sum-
+marise the structure of this ensemble in surface-configuration
+space, we cluster the fullN sp-spot solutions at a given epoch
+using aK-medoids algorithm, where each cluster representa-
+tive (the medoid) is anactualinversion solution (Kaufman &
+Rousseeuw 1990). This analysis is used only to aid interpreta-
+tion of dominant families of surface solutions; our contamina-
+tion corrections∆p 2(λ) are still computed from the full retained
+ensemble as described in Section 2.3.2.
+Because each inversion solution is a full surface configura-
+tion, clustering requires a notion of dissimilarity between two
+Nsp-spot solutions. We represent thei-th retained solution as an
+unordered set of spots,
+Si ={s i,1,...,s i,Nsp},s i,n =(θ i,n, ϕi,n,r i,n),(D.1)
+where (θ,ϕ) is the spot-centre position (colatitude and longitude)
+andris the angular radius.
+We define a spot dissimilarity metric that combines an angu-
+lar separation term and a radius difference penalty. For two spots
+s=(θ,ϕ,r) ands ′ =(θ′,ϕ′,r′),
+δ(s,s′)=w ang ∆ψ (θ,ϕ),(θ ′,ϕ′) +w r|r−r ′|,(D.2)
+where∆ψis the great-circle distance, and (w ang,w r) are fixed
+weights (we adoptw ang =1 andw r =0.3).
+The distance between twoN sp-spot solutions is then defined
+by optimally matching their spots (minimum-cost assignment)
+underδ:
+d(Si,S j)=min
+π∈Π
+NspX
+n=1
+δ
+
+si,n,s j,π(n)
+
+,(D.3)
+whereΠis the set of permutations of{1,...,N sp}.
+For a givenK,K-medoids selects a set of medoid indices
+MK ={m 1,...,m K}⊂{1,...,N sol}, where eachm k corresponds
+to an actual inversion solution (medoid)S mk. Given a candidate
+medoid setM K, each solutionS i is assigned to its nearest medoid
+under the configuration distanced, and the total within-cluster
+dissimilarity is the sum of these nearest-medoid distances. The
+objective for a fixedKis therefore
+J(K)Bmin
+MK⊂{1,...,Nsol}
+NsolX
+i=1
+min
+mk∈MK
+d Si,S mk
+.(D.4)
+For a fixedK, we minimiseJ(K) with the standard Partition-
+ing Around Medoids (PAM) algorithm (Kaufman & Rousseeuw
+1990), which iteratively updates the medoid set until no further
+improvement inJ(K) is found.
+We selectKwith an elbow criterion based on the relative
+improvement
+RI(K)B J(K−1)−J(K)
+J(K−1) (K≥2),(D.5)
+adopting a thresholdτ=0.12 and choosing the smallestKsuch
+that RI(K)<τ. Fort 145 this yieldsK=5 (Fig. D.1, top).
+For each cluster we compute a cluster-conditional mean spot-
+covering multiplicity map on a latitude–longitude grid folded
+to the anti-planet hemisphere (overlaps add), and overplot the
+medoid spot outlines along with the transit chord band for con-
+text; these cluster-conditional maps are shown in the main text
+(Fig. 4). In this appendix, we additionally show the correspond-
+ing all-solution mean spot-covering multiplicity map with the
+medoid of the largest cluster overplotted (Fig. D.1, middle).
+Article number, page 18 of 22
+
+Ò. Porqueras-León et al.: Correcting stellar contamination in transmission spectroscopy with contemporaneous monitoring
+(a)Observed epochs (t 143 andt 145).
+ (b)Activity maximum epochs (t 191 andt 192).
+Fig. B.1:Difference between LD prescriptions in activity corrections derived using the inversion framework.
+(a)Observed epochs (t 143 andt 145).
+ (b)Activity maximum epochs (t 191 andt 192).
+Fig. B.2:Same quantity as in Fig. B.1, but restricted to the wavelength range used for comparison with the Schlawin et al. (2024)
+transmission spectrum. Curves have been centred around 0 for clarity.
+Table C.1:Spot-number selection diagnostics for theStarSiminversions of GJ 1214.
+Nsp ˆℓN ∆ˆℓ2∆ ˆℓAIC ⋆ ∆AIC⋆ BIC⋆ ∆BIC⋆
+1 572.987 – – -1139.974 26.683 -1128.803 13.211
+2 588.178 15.191 30.381 -1164.356 2.302 -1142.014 0.000
+3 590.857 2.680 5.359 -1163.715 2.943 -1130.203 11.811
+4 595.329 4.471 8.943 -1166.658 0.000 -1121.975 20.039
+5 596.026 0.697 1.395 -1162.052 4.605 -1106.199 35.815
+Notes.We report ˆℓN, adjacent-model gains∆ ˆℓN−1→N = ˆℓN− ˆℓN−1, and the ranking-equivalent information criteria AIC ⋆
+N and BIC⋆
+N (see text),
+along with differences relative to the minimum (lower is better). Derived quantities are computed from full-precision values and rounded to three
+decimals.
+Appendix E:UnSPOTTERlearning curve
+To assess whether the size of the synthetic training set limits
+the predictive performance ofUnSPOTTER, we performed a con-
+trolled learning-curve experiment. We used the network config-
+uration adopted in the main analysis and progressively reduced
+the number of independent base simulations used for training to
+12.5%, 25%, 50%, 75%, and 100% of the adopted training sam-
+ple, while keeping the validation and test sets fixed. The exper-
+iment was performed for thet 145 network. As in the production
+training, each independent base simulation contributes six noisy
+realisations. Three networks with different random initialisations
+were trained at each training-set size.
+Article number, page 19 of 22
+
+A&A proofs:manuscript no. aanda
+(a)Elbow diagnostic for selectingKatt 145. We show theK-medoids objectiveJ(K) and the relative improvement RI(K). The horizontal line marks
+the adopted thresholdτ=0.12; we select the smallestKwith RI(K)<τ, yieldingK=5 (vertical line).
+(b)All-solution mean spot-covering multiplicity map in a Hammer projection, with the medoid of the largest cluster overplotted (white).
+Fig. D.1:Additional clustering diagnostics for the inversion surface-map ensemble at thet 145 epoch.
+Figure E.1 shows the resulting test-set MAE. The error de-
+creases systematically as the training sample is increased, from
+21.54±0.14 ppm at 12.5% of the training set to 16.50±0.47
+ppm for the full training set. The improvement becomes progres-
+sively smaller towards the largest training-set sizes: increasing
+the training sample from 75% to 100% decreases the mean MAE
+from 16.94 to 16.50 ppm, an improvement of approximately 0.44
+ppm (2.6%), comparable to the run-to-run dispersion between
+independently initialised networks at these sample sizes.
+The learning curve therefore places the adopted training-set
+size in a regime of diminishing returns, as it indicates that the
+predictive performance is no longer strongly limited by the num-
+ber of synthetic training simulations, and that substantially en-
+larging the simulation set would be expected to yield only mod-
+est further gains relative to the additional computational cost.
+Appendix F: Comparison with the JWST/NIRSpec
+transmission spectrum for the inversion
+framework
+Figure F.1 shows the same comparison with the Schlawin et al.
+(2024) transmission spectrum as in Figure 9, but using the
+inversion-based corrections.
+Appendix G: Corrections for individual transits
+Figures G.1 and G.2 show the inversion andUnSPOTTERcorrec-
+tions derived for each individual epoch (t143,t 145,t 191 andt 192).
+Article number, page 20 of 22
+
+Ò. Porqueras-León et al.: Correcting stellar contamination in transmission spectroscopy with contemporaneous monitoring
+Fig. E.1:Learning curve for theUnSPOTTERnetwork at thet 145 epoch. The horizontal axis gives the fraction of the complete training
+set used for training. Small points show the test-set MAE for three independently initialised trainings at each sample size, while
+filled markers and error bars show their mean and standard deviation. The validation and test sets are held fixed throughout the
+experiment.
+Fig. F .1:Same as Fig. 9, but for the inversion.
+Article number, page 21 of 22
+
+A&A proofs:manuscript no. aanda
+(a)t 143 andt 145
+ (b)t 191 andt 192
+Fig. G.1:Comparison of transit depth corrections for inversions.
+(a)t 143 andt 145
+ (b)t 191 andt 192
+Fig. G.2:Comparison of transit depth corrections for theUnSPOTTERframework.
+Article number, page 22 of 22
