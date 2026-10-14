@@ -36,12 +36,27 @@
 
 from __future__ import annotations
 
+import logging
 import time
 from typing import Any
 
 from . import retriever, tools
+
+# rewrite_query() 定义在 retriever.py 末尾（第 8 步 ③），这里必须显式导入 ——
+# 因为它不是 retriever 的「属性式」用法（那样要写 retriever.rewrite_query），
+# 漏了这行 run_pipeline 一跑就 NameError: name 'rewrite_query' is not defined。
+from .retriever import rewrite_query
 from .config import settings
 from .llm import llm_client
+
+# 本模块自己的 logger（第 11 步 ⑥ 要打印 token 消耗）。
+# ★ 写日志前必须先有它 —— 每个模块一个，tools.py 里那个不能跨文件用。
+logger = logging.getLogger(__name__)
+
+# ① root 保持 WARNING —— 第三方库的 INFO 自动被挡在门外
+logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
+# ② 只把自己这个包放开到 INFO
+logging.getLogger("app").setLevel(logging.INFO)
 
 # 注意：memory 是**第 11 步才有的模块**，所以不要写在文件顶部 ——
 # 否则第 7~10 步 `import app.graph` 会直接 ModuleNotFoundError，
@@ -129,6 +144,14 @@ async def run_pipeline(
     t0 = time.perf_counter()
     session = get_session(session_id)
 
+    # ★ Session 里存历史用的字段是 turns，而且元素是 Turn 对象（dataclass）；
+    #   而 rewrite_query(question, history) 要的是 [{"role":..., "content":...}] 这种
+    #   dict（它内部用 m.get(...) 取值）。所以必须先转一次：
+    #   - 写 session.messages → AttributeError（根本没这个字段）
+    #   - 直接传 session.turns → AttributeError: 'Turn' object has no attribute 'get'
+    history = [{"role": t.role, "content": t.content} for t in session.turns]
+    q = await rewrite_query(question, history)
+
     # 1) 路由：这一步决定「要不要查资料 / 要不要调工具」
     route = await _route(question, use_tools)
 
@@ -138,7 +161,7 @@ async def run_pipeline(
     context = "（本次未检索）"
 
     if route == "retrieve":
-        hits = await retriever.retrieve(question, top_k=top_k, use_hybrid=True)
+        hits = await retriever.retrieve(q, top_k=top_k, use_hybrid=True)
         context, sources = _build_context(hits)
         if not hits:
             # 检索层硬拦截：没有资料就直接拒答，**根本不调模型**（省钱又防幻觉）
@@ -183,6 +206,9 @@ async def run_pipeline(
     ]
     resp = await llm_client.chat(messages)
     answer = resp.get("content", "")
+
+    usage = resp.get("usage", {})
+    logger.info("prompt_tokens=%s", usage.get("prompt_tokens"))
 
     # 4) 写回记忆（下一轮才有上下文）
     session.add("user", question)

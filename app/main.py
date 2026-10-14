@@ -1,12 +1,12 @@
 """FastAPI 入口：把能力暴露成 HTTP 接口。
 
-第 7 步完成后的样子 —— 项目第一次能端到端问答：
-  GET  /health         健康检查（从这一步起返回真实数据，不再是写死的值）
-  POST /chat           一问一答
-  POST /chat/stream    SSE 流式输出（打字机效果）
+第 11 步完成后的样子 —— 已经能跨轮次记忆：
+  GET  /health                    健康检查
+  POST /chat                      一问一答
+  POST /chat/stream               SSE 流式输出（打字机效果）
+  POST /session/{id}/clear        清空某个会话的记忆
 
 后面还会继续补：
-  第 11 步 → /session/{id}/clear
   第 12 步 → /stats、/upload
 """
 
@@ -19,7 +19,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
-from . import graph
+from . import graph, memory
 from .embedding import embedder
 from .llm import llm_client
 from .schemas import ChatRequest, ChatResponse, HealthResponse, SourceChunk
@@ -104,3 +104,9 @@ async def chat_stream(req: ChatRequest):
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@app.post("/session/{session_id}/clear", tags=["对话"])
+async def clear_session(session_id: str) -> dict:
+    ok = memory.clear_session(session_id)
+    return {"cleared": ok, "session_id": session_id}
