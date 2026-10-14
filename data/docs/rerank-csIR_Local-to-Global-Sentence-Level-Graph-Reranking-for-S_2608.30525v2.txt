@@ -1,0 +1,1491 @@
+Local-to-Global Sentence-Level Graph Reranking for Scientific Synthesis
+Zheng Dou1, Zhao Zhang1∗, Hao Geng1, Ningjing Wang1, Deqing Wang1,2∗
+1 School of Computer Science and Engineering, Beihang University, Beijing, China
+2 Zhongguancun Laboratory, Beijing, China
+{miracle_dz, zhao_zhang, genghao, wangningjing, dqwang}@buaa.edu.cn
+Abstract
+Retrieval-augmentedscientificsynthesisaimstoanswercom-
+plexresearchquestionsbyintegratinginformationfrommulti-
+ple papers into comprehensive and well-grounded responses.
+Since the generator can only synthesize the information se-
+lected and organized by the reranker, the quality of the gen-
+erated synthesis depends critically on the reranked results.
+However, most rerankers operate at the passage level, which
+leaves key methodological, empirical, and comparative in-
+formation buried in long and flat contexts, weakening the
+grounding of generated claims. Moreover, existing rerankers
+mainly rely on independent query-candidate scoring which
+overlooks complementary, contextual, and contrasting rela-
+tions across scientific candidates, limiting information cover-
+age and the comprehensiveness of the resulting synthesis. To
+address these limitations, we propose LoG-Reranker, a local-
+to-globalsentence-levelgraphrerankingframeworkforscien-
+tificsynthesis.LoG-Rerankerperformsrole-awarelocalscor-
+ingtoidentifyfine-grained,query-relevantsentencesandthen
+modelstheirrelationsonasentencegraphacrossthecandidate
+settogloballyrefinesentencerankings.Top-rankedsentences
+and their connected neighbors are organized into a structured
+input context for generator to produce more grounded and
+comprehensivesynthesis.Extensiveexperimentsonscientific
+synthesisandrerankingbenchmarksshowthatLoG-Reranker
+consistentlyoutperformscompetitivererankers,yieldingmore
+reliable rankings and improving the quality of generated syn-
+thesis.
+1 Introduction
+With recent advances in LLMs and retrieval augmentation,
+RAG has become a natural approach to scientific question
+answering(QA)bygroundingLLMresponsesinexternalpa-
+persandpassages(Dingetal.2026;Agarwaletal.2025).Un-
+liketypicalscientificQAtasksthatseekshortorisolatedan-
+swers,scientific synthesisaims to generate long-form, com-
+prehensive and well-grounded answers to complex research
+questionsbyintegratinginformationfrommultiplescientific
+papers (Asai et al. 2026). With the explosive growth of sci-
+entific literature, this task has become increasingly essential
+for supporting researchers in literature review and research
+discovery. Figure 1 shows a typical pipeline for scientific
+synthesis: a retriever first recalls a candidate set of poten-
+tially relevant passages from a large corpus, then a reranker
+scores these candidates via query-candidate interaction to
+∗Corresponding author.
+Figure 1: The pipeline of scientific synthesis and the moti-
+vation of LoG-Reranker.
+prioritize more relevant information, and a generator syn-
+thesizes the top-ranked candidates into a final answer. This
+paper focuses on the reranking stage, which serves as the
+bridgebetweenretrievalandgeneration.Byselectingandor-
+ganizingthesourceinformationsuppliedtothegenerator,an
+effective reranker should provide higher-quality input con-
+text and thereby enable moregroundedandcomprehensive
+scientific synthesis.
+However,typicalrerankersstilloperateatthedocumentor
+passagelevel(Chenetal.2024;Zhangetal.2024),remaining
+limited for identifying key methodological, empirical, and
+comparative information within detailed sentences of scien-
+tific candidates. Such coarse-grained selection yields long
+andflatcontextsforthegenerator,wherecriticaldetailsmay
+beburied(Liuetal.2024).Withoutthesedetails,thegenera-
+tor may not reliably identify and attribute the source content
+to support generated claims (Xia et al. 2025; Zhang et al.
+2025), resulting in less grounded synthesis. This highlights
+the need for reranking that moves beyond coarse passage-
+levelprioritizationtosurfacefiner-grainedinformationunits,
+such as sentences, before synthesis generation.
+Another limitation is that typical rerankers score each
+query-candidate pair independently (Nogueira and Cho
+2020;Zhuangetal.2023),overlookinghowcandidatescom-
+plement, contextualize, or contrast with one another. This
+limits the generator’s ability to ensure coherent integration
+and sufficient coverage across the relevant aspects of a re-
+searchquestion(Xuetal.2023;Samarinasetal.2025),lead-
+arXiv:2608.30525v2 [cs.IR] 7 Sep 2026
+
+ing to less comprehensive synthesis. Although some graph-
+based rerankers introduce relational signals through passage
+similarity (Miao et al. 2026), document links (Francesco
+et al. 2024), or entity-level knowledge graphs (Dong et al.
+2022), these structures still fail to capture fine-grained re-
+lations among methodological, empirical, and comparative
+statements across scientific candidates. Therefore, an effec-
+tivererankerforscientificsynthesisshouldconsiderbothlo-
+calqueryrelevanceandtheglobalrelationalstructurewithin
+the candidate set.
+Motivatedbytheselimitations,weproposeLoG-Reranker,
+a local-to-global sentence-level graph reranking framework
+forscientificsynthesis.AsillustratedinFigure1,ourreranker
+replaces coarse, independently ranked passages with fine-
+grained sentence selection and cross-candidate relational
+modeling.Thelocalcomponentidentifiesquery-relevantde-
+tails, while the global component promotes complementary
+and contextually connected information across candidates.
+Thisdesigntreatsrerankingassynthesis-orientedcontextre-
+finement rather than only relevance ordering. Together, they
+providethegeneratorwithstructuredsentence-levelcontext,
+addressing missing details and limited coverage to generate
+more grounded and comprehensive scientific synthesis. The
+main contributions of this work are summarized as follows:
+•Weintroducerole-awarelocalsentencescoringthatmod-
+els the compatibility between query intents and sentence
+roles for fine-grained relevance estimation.
+•Building on these local relevance scores, we propose a
+local-to-global graph reranking framework that captures
+intra-passageadjacencyandconstrainedcross-passagere-
+lations in a sentence graph to globally refine sentence
+rankings over the retrieved candidate set.
+•Extensiveexperimentsonscientificsynthesisandrerank-
+ing benchmarks show that LoG-Reranker improves both
+reranking and synthesis generation, including citation
+grounding, information coverage, and answer quality.
+2 Related Work
+Neural and LLM-Based Reranking.Neural rerankers
+initiallymodelquery-candidaterelevancethroughpretrained
+cross-encoders (Nogueira and Cho 2020), while subsequent
+generativeapproachesreformulaterelevanceestimationwith
+sequence-to-sequence models (Nogueira, Jiang, and Lin
+2020) and ranking-specific objectives (Zhuang et al. 2023).
+Recent listwise methods further incorporate inter-candidate
+comparisons through multi-candidate fusion (Yoon et al.
+2024)orLLM-basedpermutationgeneration(Maetal.2023;
+Sunetal.2023;Pradeep,Sharifymoghaddam,andLin2023).
+In scientific domain, DeepEra introduces step-by-step rea-
+soning into scientific reranking to assess logical relevance
+and evidential support beyond surface-level semantic simi-
+larity(Chenetal.2026).Nevertheless,thesemethodsremain
+primarily relevance-oriented and operate at the document or
+passage level, without explicitly modeling fine-grained sci-
+entific information for downstream generation.
+Fine-Grained Reranking and Information Refinement.
+To reduce irrelevant content in coarse-grained candidates,
+recent methods refine retrieved information through extrac-
+tive or abstractive compression before generation (Xu, Shi,
+and Choi 2024). Moving beyond compression, sentence-
+level reranking and reconstruction select relevant content
+within passages rather than treating each passage as an in-
+divisible unit (Hwang et al. 2024). Subsequent approaches
+improve such refinement by preserving contextual depen-
+dencies (Hwang et al. 2025), prioritizing evidential support
+(Jeong et al. 2025), or identifying fine-grained knowledge
+overlooked by document-level processing (Han et al. 2025).
+Inscientificreranking,compactdocumentfeatureshavealso
+been used in a coarse-to-fine process to enlarge the candi-
+datepoolbeforerefiningthehighest-rankeddocuments(Tian
+et al. 2025). Despite exposing more concise and informative
+content, these methods mainly compress, select, or rerank
+fine-grained content without globally modeling their rela-
+tions across the candidate set.
+Graph-Based Reranking.To move beyond isolated
+query-candidate scoring, graph-based rerankers (Dong et al.
+2024) model relations among candidates through corpus-
+levelconnectivityandsemanticproximity,enablingadaptive
+candidate expansion (MacAvaney, Tonellotto, and Macdon-
+ald 2022) and relational score propagation (Francesco et al.
+2024). Related approaches further enrich passage relevance
+by incorporating explicit entity and relation knowledge into
+representations(Dongetal.2022),orbyconstructingcandi-
+date graphs from heterogeneous proximity signals to refine
+their ranking scores (Miao et al. 2026). To capture relations
+amongthefine-grainedinformationunits,recentstudiescon-
+structgraphsatthesentencelevel.Sentencegraphshavebeen
+used to jointly model question-answer sentences for answer
+selection (Iyer et al. 2023), connect relevant sentences dur-
+ing progressive multi-hop reasoning (Zhu et al. 2025), and
+organize sentence-level dependencies for graph-guided se-
+lection and path expansion (Liang et al. 2026). However,
+these methods are primarily designed for answer selection
+ormulti-hopreasoning,whereasscientificsynthesisrequires
+sentence-level graph reranking to assess fine-grained scien-
+tificstatementswithintheirbroadercross-papercontext.We
+propose LoG-Reranker to fill this gap by integrating query-
+awarelocalsentencescoringwithgraph-basedglobalrerank-
+ing over the retrieved candidate set for scientific synthesis.
+3 Method
+Problem Formulation
+Given a scientific queryqand a corpusC, a retriever first
+returns a candidate set ofNpotentially relevant passages
+Pq ={p 1, . . . , pN }.Reranking operates over the retrieved
+setP q to provide more relevant information for downstream
+generation.Eachretrievedpassagep i ∈ Pq isfurtherdecom-
+posed into sentencespi ={s i,1, . . . , si,mi }, together yield-
+ingaunifiedsentencecandidatesetS q.Thegoalofsentence-
+level reranking is to learn a scoring functionfθ that assigns
+each sentences∈ Sq a relevance scorezs =f θ(q, s;Sq),
+allowing the candidate sentences to be ranked. Top-ranked
+sentences are then selected and organized as input context
+for subsequent synthesis generationy= Genϕ(q,S ∗q ).
+
+Figure 2: The overall framework of LoG-Reranker.
+Overview
+As illustrated in Figure 2, LoG-Reranker adopts a local-
+to-global reranking paradigm consisting of three compo-
+nents. (1)Local sentence scoring.Each retrieved passage
+is first decomposed into sentence-level candidates. Within
+each query–passage pair, the model encodes the query and
+sentences, predicts the query intent and sentence roles, and
+combines their contextual representations with intent–role
+interactions to compute a fine-grained local relevance score
+foreachsentence.(2)Globalgraphreranking.Thesentence
+candidates are then organized into a sentence-level graph
+spanning the entire candidate set. Each node is initialized
+with its contextual representation, role label, and local rele-
+vance score, while intra-passage adjacency edges and cross-
+passage similarity edges support information propagation.
+The resulting graph representations are used to compute a
+globalrelevancescoreforeachsentencenode,producingthe
+final sentence rankings. (3)Structured context construction.
+Finally, the top-ranked sentence nodes are selected and ex-
+panded with their graph neighbors to preserve local context
+and cross-passage connections, providing a structured input
+context for downstream generation rather than a flat ranked
+passage list.
+Local Sentence Scoring
+For each retrieved passage, the local scoring estimates the
+fine-grained relevance of its sentences by jointly modeling
+contextual semantics and the compatibility between query
+intent and sentence roles (Figure 2, left).
+Contextualencoding.Givenaqueryqandapassagep i =
+{si,1, . . . , si,mi },weconcatenatethequerywithallsentences
+and feed them into a shared Transformer encoder:
+Hi = Encoder ([q;si,1;. . .;si,mi ]),(1)
+whereH i ∈R Li×d denotes the contextualized token repre-
+sentationsandL i isthelengthofthejointinput.Meanpool-
+ing over the corresponding token spans yields the passage-
+conditioned query representationh (i)q and contextual sen-
+tence representations{h i,j}mij=1. This joint encoding pre-
+servesthelocalpassagecontextwhileallowingeachsentence
+to interact with the query.
+Intent and role modeling.Scientific queries may empha-
+size different types of information needs, while sentences
+within scientific passages also serve different functional
+roles.Toexplicitlymodeltheircompatibility,wepredictsoft
+distributions for the query intent and each sentence role:
+γ(i)q = softmax MLPint(h(i)q ),(2)
+ri,j = softmax
+ 
+MLProle(hi,j)
+
+,(3)
+whereγ (i)q ,r i,j ∈R 3 denote distributions over background,
+method, and result. These soft distributions allow both the
+query and each sentence to express multiple intent or role
+characteristics.
+Their compatibility is represented through element-wise
+interaction and projected into a role-aware feature:
+gi,j =W p
+
+γ(i)q ⊙r i,j
+
+,(4)
+where⊙denotes element-wise multiplication andW p is a
+learnable projection. For efficient sentence-wise computa-
+tion,γ (i)q is replicated across all sentences inpi, enabling
+their intent-role interactions and subsequent scoring to be
+computed in parallel.
+
+Localrelevancescoring.Thelocalscorerconcatenatesthe
+contextualquery,sentence,andintent-rolerepresentationsto
+compute the relevance logit and normalized local score:
+ℓlocali,j = MLPlocal
+
+[h(i)q ;h i,j;g i,j] ,(5)
+zlocali,j =σ  ℓlocali,j  ,(6)
+whereσ(·)denotes the sigmoid function and the local score
+zlocali,j jointly reflects contextual query-sentence relevance
+and intent-role compatibility ofsi,j. Together withhi,j and
+ri,j,theyareusedtoinitializethecorrespondingnodeinthe
+global sentence graph.
+Global Graph Reranking
+Local scoring estimates sentence relevance within individ-
+ual passages, without considering their relations across the
+entire candidate set. We therefore construct a query-specific
+sentencegraphG q = (Vq,E q)toperformgraph-basedglobal
+reranking (Figure 2, middle).
+Sentence graph construction.Each nodev i,j ∈ Vq cor-
+responds to a sentencesi,j (jth sentence fromith passage).
+Its contextual representationhi,j, role distributionri,j, and
+localscorez locali,j areseparatelyprojectedintoasharedgraph
+space and fused as node embedding initialization:
+x(0)i,j = LN ϕh(hi,j) +ϕr(ri,j) +ϕz(zloci,j ) ,(7)
+whereϕ h,ϕ r, andϕ z project the features into a shareddg-
+dimensional space andLNdenotes layer normalization.
+Theedgesetconsistsofintra-passageadjacencyedgesand
+cross-passage similarity edges:
+Eq =E adj ∪ Esim.(8)
+For each passagepi, directed adjacency edges connect con-
+secutive sentences in their original order:
+Eadj ={(v i,j, vi,j+1)|1≤j < m i}.(9)
+Eachadjacencyedgeistypedaccordingtothepredictedrole
+labelˆri,j = arg maxri,jofitssourceandtargetnodes,yield-
+ing seven relation types: onesame-rolecontinuity type and
+six (A23) directedcross-roletransitions among background
+(bg), method (mt), and result (rs).
+Forcross-passageconnections,welinksentencenodesthat
+share the same predicted role and exhibit similar semantics
+and local relevance scores:
+Esim =
+
+(u, v)|p(u)̸=p(v),ˆr u = ˆrv,
+cuv ≥τ sim,|z localu −z localv | ≤δ,
+v∈TopK k(u)
+ 
+,
+(10)
+wherep(u)denotes the source passage,c uv = cos(hu,h v)
+denotes the cosine similarity between their contextual sen-
+tence representations,τ sim is the similarity threshold,δ
+boundsthelocal-scoredifference,andTopK k(u)retainsthe
+kmost similar eligible nodes.
+Each retained pair is connected bidirectionally and as-
+signed a sharedsimilaritytype. Together with the seven
+intra-passage relation types, this yields edge types setT.
+These constraints restrict cross-passage connections to sen-
+tencesthataresemantically,functionally,andrelevance-wise
+compatible, providing a typed relational structureG q =
+(Vq,E q, T)for subsequent graph encoding.
+Relation-aware graph encoding.We employ a multi-
+layer relation-aware graph attention encoder to propagate
+information overG q. For an edge(u, v)with relation type
+t=rel(u, v)∈T, the unnormalized and normalized atten-
+tion weights of headhare computed as:
+e(ℓ,h)uv = LeakyReLUa⊤h [Wvx(ℓ)v ;W tx(ℓ)u ;e t] ,(11)
+α(ℓ,h)uv = softmaxu∈N(v)
+
+e(ℓ,h)uv
+
+,(12)
+whereW v projects the target node,Wt applies a relation-
+specific transformation to the source node,et is a learnable
+embedding of relation typet, andah denotes the attention
+parameters of headh.
+Relation-aware messages are then aggregated across
+neighbors and attention heads to update each node repre-
+sentation:
+m(ℓ,h)v = X
+u∈N(v)
+α(ℓ,h)uv
+h
+Wtx(ℓ)u
+i
+h
+,(13)
+x(ℓ+1)v = GraphLayer
+
+x(ℓ)v ,∥
+h
+m(ℓ,h)v
+
+,(14)
+whereeachGraphLayerappliesanoutputprojectionfollowed
+by residual normalization and a feed-forward block. AfterL
+layers,theresultingrepresentationsX (L)V ={x (L)v }v∈Vq en-
+code local sentence information and candidate-set relations
+for global scoring.
+Global node scoring.The global scorer computes a rank-
+ing logit and normalized score from each final node repre-
+sentation:
+ℓglobali,j = MLPglobal
+
+x(L)i,j
+
+,(15)
+zglobali,j =σ ℓglobali,j  .(16)
+Since the local score is incorporated into the initial node
+representation,z globali,j reflects both query-specific local rel-
+evance and the relational structure of the candidate set. The
+final sentence ranking is obtained by sorting all valid nodes
+in descending order ofzglobali,j .
+Structured Context Construction
+Aflatlistofisolatedsentencesmaydiscardthecontextualand
+cross-passage text useful for subsequent generation. Given
+the global scores, we first select the top-Ksentence nodes:
+V Kq = TopKv∈Vq  zglobalv  .(17)
+For each selected nodev, we expand it with two directed
+in-passage neighbors fromEadj and two most similar cross-
+passage neighbors fromEsim. Each resulting sentence unit
+U(v)is identified bys i,j, containing its predicted role, sen-
+tence text, in-passage adjacency context and cross-passage
+similarity context (Figure 2, right). The units are ordered by
+their global scores to form the generation context:
+Cq = [U(v1), . . . ,U(vK)], z globalv1 ≥ · · · ≥zglobalvK .(18)
+Thus, the subsequent generator receives fine-grained
+source information together with its local context and cross-
+passage connections, rather than an isolated sentence list.
+
+Training Objectives
+LoG-Reranker is trained in two stages. We first optimize the
+localcomponentwithsentence-rankingandrolesupervision,
+and then freeze it as node initialization to train the global
+graph reranker.
+Local-stage training.Lety i = (y i,1, . . . , yi,mi )and
+ℓlocali = (ℓlocali,1 , . . . , ℓlocali,mi )denotethesupervisionranksandpredicted local logits for sentences in passagepi, respec-
+tively, where a smaller rank indicates higher relevance. The
+local listwise ranking loss is defined as:
+ePi = softmax(−yi/τ),P locali = softmax ℓlocali  ,(19)
+Llocrank =− X
+i
+eP⊤i logP locali ,(20)
+where ePi is the soft target distribution induced by the su-
+pervision ranks,P locali is the predicted ranking distribution
+over sentences inpi, andτcontrols the concentration of the
+target ranking distribution.
+To provide auxiliary supervision for the functional roles
+of scientificsentences, we minimizethe divergencebetween
+the predicted and target role distributions:
+Lrole =
+X
+i
+miX
+j=1
+DKL (eri,j ∥r i,j),(21)
+where eri,j denotes the target role distribution of sentence
+si,j. The overall local-stage objective combines the primary
+ranking loss with this auxiliary objective:
+Llocal =L locrank +λL role,(22)
+whereλcontrols the contribution of auxiliary supervision.
+Global-stagetraining.Theglobalrerankeristrainedwith
+cross-passage preference pairs. For each query,Dq contains
+pairs(u, v)from different passages such thatubelongs to a
+higher-rankedpassageandhasasentenceranknoworsethan
+v. The global pairwise ranking loss is:
+Lglobal =− 1|Dq| X(u,v)∈Dq logσ  ℓglobalu −ℓ globalv  ,(23)
+which encourages the preferred nodeuto receive a higher
+global ranking logit thanv.
+Duringthisstage,onlythegraphencoderandglobalscorer
+are optimized. Graph construction relies on predicted roles
+and local scores rather than role labels in supervision data,
+maintaining consistency between training and inference.
+4 Experiments
+Experimental Setup
+Benchmark and Metrics.We adoptScholarQABench, a
+benchmarkforscientificsynthesis,anditstask-specificeval-
+uationmetricsfromOpenScholar(Asaietal.2026).Itcovers
+three single-paper tasks (PubMedQA, SciFact, and QASA)
+andfourmulti-papertasks(CS,Multi,Bio,andNeuro),with
+task-specific metrics including accuracy, ROUGE-L, rubric
+accuracy, citation F1, and organization, relevance, coverage
+scores based on Prometheus-rubrics (Kim et al. 2024).
+Following OpenScholar’s retrieval setup, we retrieve 50
+passages per query from OS-DataStore using OS-Retriever
+and add missing gold or curated pseudo-gold evidence for
+thefivelabeledtasks(PubMedQA,SciFact,QASA,CS,and
+Multi),resultinginScholarQABench-Rerank.BioandNeuro
+areretainedonlyforgenerationevaluationbecausetheypro-
+vide no gold evidence. We evaluate reranking using MAP,
+Recall, and nDCG. Each reranker’s top-10 units are passed
+to the same OS-8B generator under identical settings (Asai
+et al. 2026), and the generated answers are evaluated using
+thecorrespondingtask-specificmetricsinScholarQABench.
+Baselines.We compare our model with nine represen-
+tative baselines in four families: (1)Cross-Encoder, in-
+cluding BGE-Reranker (Chen et al. 2024), GTE-Reranker
+(Zhang et al. 2024), and OS-Reranker (Asai et al. 2026);
+(2)LLM-Based, including RankZephyr (Pradeep, Sharify-
+moghaddam, and Lin 2023) and CoRank (Tian et al. 2025);
+(3)Fine-Grained, including RECOMP (Xu, Shi, and Choi
+2024) and EXIT (Hwang et al. 2025); and (4)Graph-Based,
+includingChainRAG(Zhuetal.2025)andSentGraph(Liang
+etal.2026).Amongthem,OS-RerankerandCoRankarespe-
+cialized for scientific literature, and we use Qwen3-Max for
+baselines requiring an LLM API.
+Training Data.To construct training supervision, we ex-
+tract 25,915 single- and multi-paper QA instances from
+OpenScholartrainingdata(Asaietal.2026).WeuseQwen3-
+Maxtoannotatesentence-andpassage-levelrelevancerank-
+ingsthroughbatchedinference,followedbyvalidation,frag-
+mentremoval,andranknormalization.ApretrainedUniFAR
+model(Douetal.2026)furtherassignsbackground,method,
+and result distributions, resulting in 256,896 passages and
+2.14Mrole-annotatedsentences.Moredetailsofthetraining
+data are provided in the seperate supplementary material.
+Implementation Details.During training,gte-reranker-
+modernbert-baseserves as the base encoder of the local
+reranker, with a maximum input length of 1,024. The lo-
+calrerankeristrainedforfiveepochsusingalearningrateof
+2×10 −5, a micro-batch size of 2, and a role-loss weight
+of 0.5; its best checkpoint is frozen for global training.
+The global reranker employs a two-layer, four-head relation-
+aware GAT with a hidden dimension of 256. Cross-passage
+edgesretainthetop-8same-roleneighborswithτ sim = 0.75
+andδ= 0.25. The global reranker is trained for five epochs
+usingalearningrateof3×10 −5 andamicro-batchsizeof1.
+Both stages use AdamW, eight-step gradient accumulation,
+0.01 weight decay, 0.1 dropout, 6% warmup, and a random
+seed of 13. More implementation details are provided in the
+supplementary material.
+Main Results
+Tables 1 and 2 compare LoG-Reranker with representative
+baselines from two complementary perspectives, reranking
+and generation. We summarize two key observations:
+(1) Fine-grained relational modeling consistently im-
+proves reranking.As shown in Table 1, LoG-Reranker
+
+Model / Metric PubMedQA SciFact QASA Scholar-CS Scholar-Multi
+Recall MAP nDCG Recall MAP nDCG Recall MAP nDCG Recall MAP nDCG Recall MAP nDCG
+BGE-Reranker 89.26 73.24 79.19 74.61 60.84 67.06 75.43 48.57 54.81 95.00 88.87 90.95 39.37 24.13 34.55
+GTE-Reranker 90.32 75.04 80.78 75.96 61.42 67.32 78.73 53.56 59.04 95.00 88.74 90.88 44.50 28.33 39.48
+OS-Reranker 91.92 81.34 84.88 80.18 63.38 71.71 83.14 60.69 65.04 95.50 89.42 91.86 45.31 28.73 39.80
+RankZephyr 61.94 48.49 55.30 56.92 48.14 52.98 66.74 42.08 50.45 85.50 75.71 81.97 30.73 21.09 28.97
+CoRank 92.81 83.08 86.95 85.60 66.49 75.08 85.67 61.7267.10 95.7589.25 91.46 43.98 27.75 38.14
+RECOMP 80.98 57.85 64.26 63.61 52.92 60.88 77.46 50.94 56.63 93.75 87.86 89.23 31.50 21.61 29.90
+EXIT 83.89 59.26 67.84 70.98 55.99 62.27 69.68 43.38 51.94 90.50 83.19 85.66 41.40 25.28 36.41
+ChainRAG 72.99 50.42 55.20 63.32 51.95 58.55 70.78 43.41 51.89 94.75 87.79 90.21 33.42 22.86 31.20
+SentGraph 85.17 64.35 77.15 83.96 64.50 74.31 85.08 62.23 67.08 95.25 89.14 91.32 45.89 29.15 40.69
+LoG-Reranker93.63 84.73 88.83 87.47 67.85 76.14 86.42 63.9866.8195.75 89.76 92.04 46.87 30.46 41.29
+Table 1: Reranking performance on ScholarQABench-Rerank. Recall, MAP, and nDCG are reported over the top-10 reranked
+units (@10). Best and second-best results are shown in bold and underlined, respectively.
+Task
+Model / Metric
+Single-Paper Multi-Paper
+PubMedQA SciFact QASA Scholar-CS Scholar-Multi Scholar-Bio Scholar-Neuro
+Acc Cite Acc Cite R-L Cite Rub-Acc Cite Rub-Score Cite Rub-Score Cite Rub-Score Cite
+BGE-Reranker 82.44 76.12 81.73 50.24 19.16 45.62 60.86 36.23 3.910 52.00 4.131 51.81 4.058 52.33
+GTE-Reranker 82.44 75.21 82.69 52.88 19.29 46.11 59.56 31.02 3.975 49.97 4.140 53.91 4.082 52.70
+OS-Reranker 83.27 76.66 76.92 53.95 18.79 45.93 61.72 37.08 3.923 51.71 4.163 52.11 4.088 52.17
+RankZephyr 67.14 54.39 73.56 41.83 17.24 40.97 58.70 32.68 3.871 47.24 4.125 48.13 4.046 50.56
+CoRank 82.56 74.28 80.25 53.17 19.02 46.24 61.15 35.89 3.964 50.95 4.155 51.77 4.097 52.85
+RECOMP 69.99 64.56 74.52 38.46 18.46 33.26 55.39 33.81 3.735 41.36 4.055 38.39 3.983 40.19
+EXIT 69.04 65.56 81.62 50.12 19.48 40.41 54.80 37.51 3.682 37.16 4.092 40.29 4.043 41.75
+ChainRAG 71.41 67.97 78.37 47.91 18.63 41.56 59.47 38.76 3.753 48.98 4.117 47.12 4.037 46.67
+SentGraph 72.95 70.83 79.81 48.29 18.35 42.18 61.32 38.14 3.797 49.23 4.124 50.65 4.033 49.84
+LoG-Reranker84.67 77.92 83.17 55.10 20.38 47.76 62.44 39.42 4.006 52.74 4.240 54.87 4.152 53.80
+Table 2: Generation performance on ScholarQABench using the top-10 reranked units. Task-specific metrics include accuracy
+(Acc) for PubMedQA and SciFact, ROUGE-L (R-L) for QASA, rubric accuracy (Rub-Acc) for Scholar-CS, and the aggregated
+Prometheus rubric score (Rub-Score) over organization,relevance, and coverage for the remaining tasks; Cite denotes citation
+F1. Best and second-best results are shown in bold and underlined, respectively.
+achieves the best result in 14 of the 15 task-metric com-
+parisons, including one tie. The strongest competing ap-
+proachvariessubstantiallyacrossdatasets:CoRankishighly
+competitive on PubMedQA and SciFact, OS-Reranker per-
+forms strongly on Scholar-CS, and SentGraph provides the
+strongest baseline results on Scholar-Multi. This pattern
+shows that no single competing paradigm performs uni-
+formly well across the evaluated datasets. In contrast, LoG-
+Rerankerremainsconsistentlyeffectiveunderthesediffering
+settings. For example, it improves MAP over the strongest
+baselineby1.36pointsonSciFactand1.31pointsonScholar-
+Multi. The gains span Recall, MAP, and nDCG, indicating
+that LoG-Reranker both retains more relevant information
+within the top-10 cutoff and ranks it more accurately. Al-
+though its nDCG on QASA is slightly below the best result,
+it still obtains the highest Recall and MAP on that dataset.
+Overall,theseresultsshowthatcombiningsentence-levello-
+calrelevancewithcandidate-setrelationalstructureprovides
+robust improvements over competitive rerankers.
+(2) Improved reranking leads to more effective scien-
+tific synthesis generation.Table 2 provides a stronger eval-
+uation of whether the ranking improvements are useful be-
+yondthererankingobjective.LoG-Rerankerobtainsthebest
+task-specific generation score and citation F1 on all seven
+benchmarks, covering every reported comparison. Since all
+methodsusethesameOS-8Bgeneratorandtop-10inputset-
+ting,theimprovementsreflectthequalityoftheinputcontexts
+producedbeforegenerationratherthandifferencesingenera-
+torcapacity.Notably,thegainsoccursimultaneouslyintask-
+specific metrics and citation F1. On QASA, LoG-Reranker
+improves ROUGE-L by 0.90 points and citation F1 by 1.52
+points over the strongest corresponding baselines, while on
+Scholar-CS it improves rubric accuracy and citation F1 by
+0.72 and 0.66 points, respectively. In terms of the quality
+of generated answer, LoG-Reranker also achieves the high-
+est Rub-Score on Scholar-Multi, Scholar-Bio, and Scholar-
+Neuro, reflecting stronger organization, relevance, and cov-
+erage in scientific synthesis. These results demonstrate that
+the benefits extend beyond ranking metrics, as fine-grained
+information prioritization and relation-aware context orga-
+nization provide the generator with source input that better
+supports answer quality, coverage, and citation grounding.
+Analysis and Ablation Study
+To better understand the generation improvements of LoG-
+Reranker, we conduct a fine-grained quality analysis (Fig-
+
+Figure 3: Comparison of Prometheus rubric scores across four scientific synthesis tasks, where Cov., Rel., and Org. denote
+coverage, relevance, and organization, respectively.
+Model / Metric Scholar-CS Scholar-Multi Scholar-Bio Scholar-Neuro
+Cov. Rel. Org. Cov. Rel. Org. Cov. Rel. Org. Cov. Rel. Org.
+LoG-Reranker4.12 4.71 4.56 3.713 4.222 4.084 3.938 4.518 4.263 3.768 4.429 4.258
+w/o Local3.38 4.15 3.90 3.365 3.793 3.803 3.687 4.387 4.085 3.667 4.268 4.082
+w/o Global3.46 4.22 3.95 3.407 3.917 3.806 3.717 4.461 4.022 3.689 4.362 4.013
+w/o Structured3.70 4.38 4.14 3.602 4.176 3.898 3.782 4.507 4.178 3.719 4.397 4.137
+Table3:Ablationresultsonmulti-papersynthesistasks.Cov.,Rel.,andOrg.denotecoverage,relevance,andorganizationscores
+evaluated by Prometheus rubrics, respectively.
+ure 3) and a component-wise ablation study (Table 3).
+Improvementsspanallsynthesisdimensions.Asshown
+in Figure 3, LoG-Reranker achieves the highest score in all
+12task-dimensioncomparisons,indicatingthatitsgeneration
+gainsareconsistentacrosstasksandrubricdimensionsrather
+than concentrated in a particular aspect of synthesis qual-
+ity. Relative to the strongest baseline, the most pronounced
+margins appear in coverage on Scholar-CS and Scholar-Bio
+and in organization on Scholar-Bio and Scholar-Neuro. This
+pattern is consistent with the local-to-global design: fine-
+grained sentence selection helps retain useful information,
+while relation-aware reranking and context construction fa-
+cilitate its integration across papers. Importantly, relevance
+alsoimprovesoneverytask,showingthatthegainsincover-
+age and organization are achieved without diluting the focus
+of the generated answers.
+Local and global modeling provide complementary
+benefits.Table3showsthatremovingeitherrerankingstage
+reduces all three rubric scores across every task.w/o Local
+removes role-aware sentence modeling and local relevance
+scoring, replacing sentence nodes with passage nodes con-
+nected only by semantic similarity. This variant produces
+the largest overall degradation, with coverage decreasing by
+0.360 points on average, confirming that passage-level rep-
+resentationscannotadequatelyexposethefine-grainedinfor-
+mationrequiredforsynthesis.Incontrast,w/oGlobalretains
+the local sentence scorer but removes the graph encoder
+and global scorer, ranking sentences solely by their local
+scores. Despite preserving the same sentence candidates, it
+still causes substantial declines, with organization decreas-
+ing by 0.344 points on average compared with 0.230 for
+relevance. This difference indicates that independently rele-
+vant sentences do not necessarily form a coherent candidate
+set and global graph modeling complements local relevance
+by accounting for intra-passage context and cross-passage
+relations.
+Structured context contributes beyond sentence rank-
+ing.Thew/o Structuredvariant in Table 3 preserves the
+complete local-to-global reranking process but provides the
+generator with a flat list of top-ranked sentences without
+adjacencyorsimilarityneighborexpansion.Becausetheun-
+derlying rankings remain unchanged, its performance differ-
+ence isolates the contribution of relation-aware context con-
+struction from that of sentence selection. Nevertheless,w/o
+Structuredunderperformsthecompletemodelinall12com-
+parisons. Averaged across the four tasks, organization and
+coverage decrease by 0.203 and 0.184 points, respectively,
+compared with 0.105 for relevance. This pattern reflects the
+different functions of graph neighbors: adjacency neighbors
+preservelocalcontinuity,whilecross-passageneighborssup-
+plement related information from other sources. Retaining
+these relations therefore provides a more coherent and well-
+covered generation context than a flat sentence list.
+5 Conclusion
+In this work, we present LoG-Reranker, a local-to-global
+sentence-level reranking framework for scientific synthesis,
+integrating fine-grained semantic relevance with relational
+structure. By jointly modeling local query-sentence interac-
+tions and global sentence-level graph relations, it provides
+thegeneratorwithamoreinformativeandstructuredcontext,
+enabling more grounded and comprehensive synthesis. Ex-
+perimental results on scientific synthesis benchmarks show
+consistent improvements over competitive reranking base-
+lines,whileablationstudiesfurthervalidatethecomplemen-
+tary contributions of the proposed components.
+
+References
+Agarwal, S.; Sahu, G.; Puri, A.; Laradji, I. H.; Dvijotham,
+K. D.; Stanley, J.; Charlin, L.; and Pal, C. 2025. LitLLMs,
+LLMsforLiteratureReview:AreWeThereyet?Transactions
+on Machine Learning Research.
+Asai,A.;He,J.;Shao,R.;etal.2026. Synthesizingscientific
+literaturewithretrieval-augmentedlanguagemodels.Nature,
+650: 857–863.
+Chen,H.;Long,Q.;Pu,S.;Luo,X.;Ju,W.;Xiao,M.;Zhou,
+Y.; Zhao, J.; and Wang, X. 2026. DeepEra: A Deep Evi-
+dence Reranking Agent for Scientific Retrieval-Augmented
+Generated Question Answering. arXiv:2601.16478.
+Chen, J.; Xiao, S.; Zhang, P.; Luo, K.; Lian, D.; and
+Liu, Z. 2024. BGE M3-Embedding: Multi-Lingual, Multi-
+Functionality, Multi-Granularity Text Embeddings Through
+Self-Knowledge Distillation. arXiv:2402.03216.
+Ding, H.; Zhao, Y.; Hu, T.; Wang, Z.; Patwardhan, M.; and
+Cohan, A. 2026. SciRAG: Adaptive, Citation-Aware, and
+Outline-Guided Retrieval and Synthesis for Scientific Liter-
+ature. InProceedings of the 19th Conference of the Euro-
+peanChapteroftheAssociationforComputationalLinguis-
+tics (Volume 1: Long Papers), 6440–6460. Rabat, Morocco:
+Association for Computational Linguistics. ISBN 979-8-
+89176-380-7.
+Dong, J.; Fatemi, B.; Perozzi, B.; Yang, L. F.; and Tsitsulin,
+A. 2024. Don’t Forget to Connect! Improving RAG with
+Graph-based Reranking. arXiv:2405.18414.
+Dong, Q.; Liu, Y.; Cheng, S.; Wang, S.; Cheng, Z.; Niu,
+S.; and Yin, D. 2022. Incorporating Explicit Knowledge in
+Pre-trained Language Models for Passage Re-ranking. In
+Proceedings of the 45th International ACM SIGIR Confer-
+enceonResearchandDevelopmentinInformationRetrieval,
+SIGIR ’22, 1490–1501. New York, NY, USA: Association
+for Computing Machinery. ISBN 9781450387323.
+Dou,Z.;Zhang,Z.;Wang,D.;Ban,Y.;andZhuang,F.2026.
+UniFAR: A Unified Facet-Aware Retrieval Framework for
+Scientific Documents. arXiv:2602.23766.
+Francesco, A. G. D.; Giannetti, C.; Tonellotto, N.; and Sil-
+vestri,F.2024. GraphNeuralRe-RankingviaCorpusGraph.
+arXiv:2406.11720.
+Han, J.; Mao, Z.; Liu, Y.; Che, Y.; Fu, Z.; and Wang, Q.
+2025. Fine-grained Knowledge Enhancement for Retrieval-
+Augmented Generation. InFindings of the Association for
+Computational Linguistics: ACL 2025, 10031–10044. Vi-
+enna, Austria: Association for Computational Linguistics.
+ISBN 979-8-89176-256-5.
+Hwang, T.; Cho, S.; Jeong, S.; Song, H.; Han, S.; and Park,
+J. C. 2025. EXIT: Context-Aware Extractive Compression
+forEnhancingRetrieval-AugmentedGeneration.InFindings
+oftheAssociationforComputationalLinguistics:ACL2025,
+4895–4924.Vienna,Austria:AssociationforComputational
+Linguistics. ISBN 979-8-89176-256-5.
+Hwang, T.; Jeong, S.; Cho, S.; Han, S.; and Park, J.
+2024. DSLR: Document Refinement with Sentence-
+Level Re-ranking and Reconstruction to Enhance Retrieval-
+Augmented Generation. InProceedings of the 3rd Work-
+shop on Knowledge Augmented Methods for NLP, 73–92.
+Bangkok,Thailand:AssociationforComputationalLinguis-
+tics.
+Iyer, R.; Vu, T.; Moschitti, A.; and Sun, Y. 2023. Question-
+Answer Sentence Graph for Joint Modeling Answer Selec-
+tion. InProceedings of the 17th Conference of the Euro-
+peanChapteroftheAssociationforComputationalLinguis-
+tics, 968–979. Dubrovnik, Croatia: Association for Compu-
+tational Linguistics.
+Jeong, Y.; Kim, J.; Lee, D.; and Hwang, S.-w. 2025. EC-
+oRAG: Evidentiality-guided Compression for Long Context
+RAG. InFindingsoftheAssociationforComputationalLin-
+guistics: ACL 2025, 26607–26628. Vienna, Austria: Asso-
+ciation for Computational Linguistics. ISBN 979-8-89176-
+256-5.
+Kim, S.; Shin, J.; Choi, Y.; Jang, J.; Longpre, S.; Lee, H.;
+Yun, S.; Shin, S.; Kim, S.; Thorne, J.; and Seo, M. 2024.
+Prometheus:InducingFine-GrainedEvaluationCapabilityin
+Language Models. InThe Twelfth International Conference
+on Learning Representations, ICLR 2024, Vienna, Austria,
+May 7-11, 2024. OpenReview.net.
+Liang, J.; Zhou, P.; Zhou, W.; Qing, W.; Zhao, Q.; Wang,
+Z.;Song,Q.;andLi,X.2026. SentGraph:HierarchicalSen-
+tence Graph for Multi-hop Retrieval-Augmented Question
+Answering. arXiv:2601.03014.
+Liu,N.F.;Lin,K.;Hewitt,J.;Paranjape,A.;Bevilacqua,M.;
+Petroni, F.; and Liang, P. 2024. Lost in the Middle: How
+Language Models Use Long Contexts.Transactions of the
+Association for Computational Linguistics, 12: 157–173.
+Ma, X.; Zhang, X.; Pradeep, R.; and Lin, J. 2023. Zero-
+Shot Listwise Document Reranking with a Large Language
+Model. arXiv:2305.02156.
+MacAvaney, S.; Tonellotto, N.; and Macdonald, C. 2022.
+Adaptive Re-Ranking with a Corpus Graph. InProceed-
+ings of the 31st ACM International Conference on Informa-
+tion and Knowledge Management, CIKM ’22, 1491–1500.
+New York, NY, USA: Association for Computing Machin-
+ery. ISBN 9781450392365.
+Miao, R.; Wang, Y.; Wang, R.; Li, C.; Sheng, T.; Ravi, S.;
+and Roth, D. 2026. GraphER: An Efficient Graph-Based
+EnrichmentandRerankingMethodforRetrieval-Augmented
+Generation. arXiv:2603.24925.
+Nogueira, R.; and Cho, K. 2020. Passage Re-ranking with
+BERT. arXiv:1901.04085.
+Nogueira, R.; Jiang, Z.; and Lin, J. 2020. Document
+Ranking with a Pretrained Sequence-to-Sequence Model.
+arXiv:2003.06713.
+Pradeep, R.; Sharifymoghaddam, S.; and Lin, J. 2023.
+RankZephyr: Effective and Robust Zero-Shot Listwise
+Reranking is a Breeze! arXiv:2312.02724.
+Samarinas, C.; Krubner, A.; Salemi, A.; Kim, Y.; and Za-
+mani,H.2025. BeyondFactualAccuracy:EvaluatingCover-
+age of Diverse Factual Information in Long-form Text Gen-
+eration. InFindings of the Association for Computational
+Linguistics: ACL 2025, 13468–13482. Vienna, Austria: As-
+sociationforComputationalLinguistics.ISBN979-8-89176-
+256-5.
+
+Sun, W.; Yan, L.; Ma, X.; Wang, S.; Ren, P.; Chen, Z.; Yin,
+D.; and Ren, Z. 2023. Is ChatGPT Good at Search? Inves-
+tigating Large Language Models as Re-Ranking Agents. In
+Proceedings of the 2023 Conference on Empirical Methods
+in Natural Language Processing, 14918–14937. Singapore:
+Association for Computational Linguistics.
+Tian,R.;Xu,X.;Jin,B.;Kang,S.;andHan,J.2025.CoRank:
+LLM-Based Compact Reranking with Document Features
+for Scientific Retrieval. arXiv:2505.13757.
+Xia, S.; Wang, X.; Liang, J.; Zhang, Y.; Zhou, W.; Deng, J.;
+Yu, F.;and Xiao, Y.2025. Ground Every Sentence:Improv-
+ingRetrieval-AugmentedLLMswithInterleavedReference-
+ClaimGeneration.InFindingsoftheAssociationforCompu-
+tational Linguistics: NAACL 2025, 969–988. Albuquerque,
+New Mexico: Association for Computational Linguistics.
+ISBN 979-8-89176-195-7.
+Xu, F.; Shi, W.; and Choi, E. 2024. RECOMP: Improving
+Retrieval-Augmented LMs with Context Compression and
+Selective Augmentation. InThe Twelfth International Con-
+ference on Learning Representations, ICLR 2024, Vienna,
+Austria, May 7-11, 2024.
+Xu, F.; Song, Y.; Iyyer, M.; and Choi, E. 2023. A Criti-
+cal Evaluation of Evaluations for Long-form Question An-
+swering. InProceedings of the 61st Annual Meeting of the
+Association for Computational Linguistics (Volume 1: Long
+Papers),3225–3245.Toronto,Canada:AssociationforCom-
+putational Linguistics.
+Yoon, S.; Choi, E.; Kim, J.; Yun, H.; Kim, Y.; and Hwang,
+S.-w. 2024. ListT5: Listwise Reranking with Fusion-in-
+DecoderImprovesZero-shotRetrieval.InProceedingsofthe
+62nd Annual Meeting of the Association for Computational
+Linguistics (Volume 1: Long Papers), 2287–2308. Bangkok,
+Thailand: Association for Computational Linguistics.
+Zhang, J.; Bai, Y.; Lv, X.; Gu, W.; Liu, D.; Zou, M.; Cao,
+S.; Hou, L.; Dong, Y.; Feng, L.; and Li, J. 2025. LongCite:
+EnablingLLMstoGenerateFine-grainedCitationsinLong-
+Context QA. InFindings of the Association for Computa-
+tional Linguistics: ACL 2025, 5098–5122. Vienna, Austria:
+Association for Computational Linguistics. ISBN 979-8-
+89176-256-5.
+Zhang, X.; Zhang, Y.; Long, D.; Xie, W.; Dai, Z.; Tang, J.;
+Lin, H.; Yang, B.; Xie, P.; Huang, F.; et al. 2024. mGTE:
+Generalized Long-Context Text Representation and Rerank-
+ing Models for Multilingual Text Retrieval. InProceedings
+of the 2024 Conference on Empirical Methods in Natural
+Language Processing: Industry Track, 1393–1412.
+Zhu, R.; Liu, X.; Sun, Z.; Wang, Y.; and Hu, W. 2025. Mit-
+igating Lost-in-Retrieval Problems in Retrieval Augmented
+Multi-Hop Question Answering. InProceedings of the 63rd
+Annual Meeting of the Association for Computational Lin-
+guistics (Volume 1: Long Papers), 22362–22375. Vienna,
+Austria: Association for Computational Linguistics. ISBN
+979-8-89176-251-0.
+Zhuang, H.; Qin, Z.; Jagerman, R.; Hui, K.; Ma, J.; Lu,
+J.; Ni, J.; Wang, X.; and Bendersky, M. 2023. RankT5:
+Fine-Tuning T5 for Text Ranking with Ranking Losses. In
+Proceedings of the 46th International ACM SIGIR Confer-
+enceonResearchandDevelopmentinInformationRetrieval,
+2308–2313. New York, NY, USA: Association for Comput-
+ing Machinery. ISBN 9781450394086.
+
+A Benchmark and Baseline Details
+Details of Baselines
+The specific descriptions of compared representative base-
+lines are as follows:
+BGE-Reranker(Chen et al. 2024) is a lightweight mul-
+tilingual cross-encoder built on BGE-M3. It jointly en-
+codes each query–passage pair and directly predicts its rel-
+evance, benefiting from BGE-M3’s long-context and multi-
+granularity representations.
+GTE-Reranker(Zhang et al. 2024) is a multilingual
+cross-encodertrainedwithcontrastiverelevancesupervision.
+Its native 8,192-token encoder incorporates RoPE and un-
+padding to support efficient reranking of long passages.
+OS-Reranker(Asai et al. 2026) is a scientific-domain
+cross-encoder used in OpenScholar. It fine-tunes a BGE
+reranker on synthetic query–passage relevance labels gen-
+erated from scientific literature, enabling domain-specific
+passage prioritization.
+RankZephyr(Pradeep, Sharifymoghaddam, and Lin
+2023) is an open-source 7B LLM-based listwise reranker
+that generates permutations of candidate passages. It distills
+ranking preferences from proprietary LLMs and employs
+variable-windowtrainingtoimproverobustnesstocandidate
+order and list size.
+CoRank(Tian et al. 2025) is a training-free, model-
+agnostic framework for scientific literature. It first reranks
+a broad candidate pool using compact document features,
+such as categories, sections, and keywords, and then refines
+the leading candidates using their full texts.
+RECOMP(Xu,Shi,andChoi2024)compressesretrieved
+documents before generation using learned extractive or ab-
+stractive compressors. It selects useful sentences or syn-
+thesizes concise summaries while permitting empty outputs
+whentheretrievedcontentprovidesnousefulaugmentation.
+EXIT(Hwang et al. 2025) performs context-aware ex-
+tractive compression by jointly classifying sentences while
+preserving their dependencies within retrieved documents.
+Its parallel sentence selection adapts the retained context to
+both query complexity and retrieval quality.
+ChainRAG(Zhu et al. 2025) progressively rewrites de-
+composed sub-questions to recover missing entities and re-
+trieves relevant sentences from a sentence graph. The sen-
+tencescollectedacrosssuccessivestepsarecombinedtocon-
+struct the final generation context.
+SentGraph(Liang et al. 2026) constructs a hierarchical
+sentence graph using rhetorical nucleus–satellite relations,
+topic-level subgraphs, and cross-document entity bridges. It
+subsequently performs graph-guided sentence selection and
+path expansion to retrieve connected information units.
+Benchmark Statistics
+ScholarQABench.As summarized in Table 4, Scholar-
+QABench combines three adapted single-paper tasks with
+fourexpert-curatedmulti-papertasks(Asaietal.2026).Sci-
+Fact reformulates biomedical claim verification as binary
+classification,PubMedQAevaluatesyes/nobiomedicalques-
+tionanswering,andQASArequireslong-formanswersabout
+computer science papers. The multi-paper subsets cover
+rubric-guided computer science synthesis in ScholarQA-
+CS, broad literature-review questions in biomedicine and
+neuroscience in ScholarQA-Bio and ScholarQA-Neuro,
+and expert-written questions and citation-grounded an-
+swers across computer science, biomedicine, and physics in
+ScholarQA-Multi. Together, they span classification, short-
+form QA, and open-ended synthesis across four scientific
+disciplines for comprehensive evaluation.
+Table 4 also reports metrics of each task for evaluating
+both task-specific answer and citation quality. For SciFact
+and PubMedQA, accuracy measures the proportion of pre-
+dictions matching the reference labels:
+Acc = 1n
+nX
+i=1
+I[ˆyi =y i].
+For QASA, ROUGE-L evaluates long-form answer overlap
+using the longest common subsequence (LCS):
+ROUGE-L = 2PLRL
+PL +R L
+,
+whereP L = LCS(ˆy, y)/|ˆy|andRL = LCS(ˆy, y)/|y|.
+ScholarQA-CS is additionally evaluated using expert-
+authored rubrics. Its rubric accuracy combines a general
+criterionG, covering answer quality and citation use, with
+a rubric-driven criterionAbased on question-specific key
+ingredients:
+Rub-Acc = 0.4G+ 0.6A,
+where must-have ingredients receive twice the weight
+of nice-to-have ingredients. For open-ended synthesis,
+Prometheus assigns scores to coverage, relevance, and or-
+ganization, whose mean forms the overall rubric score:
+Rub-Score = Cov + Rel + Org3 .
+Finally,citationqualityismeasuredonalltasks.Citationpre-
+cisionP c evaluateswhethercitedpassagessupporttheasso-
+ciatedstatements,whilecitationrecallR c measureswhether
+citation-worthy statements receive sufficient support. Their
+harmonic mean is
+Cite-F1 = 2PcRc
+Pc +R c
+.
+ScholarQABench-Rerank.Following the same retrieval
+settings from OpenScholar (Asai et al. 2026), we construct
+ScholarQABench-Rerankfrom the five ScholarQABench
+tasks with gold or curated source contexts. For each query,
+OS-Retrieverretrieves50passagesfromOS-DataStore.Pub-
+MedQA and SciFact use their provided gold contexts, while
+QASA identifies gold contexts through its annotated con-
+text indices. For ScholarQA-CS and ScholarQA-Multi, the
+expert-provided source contexts are treated as pseudo-gold,
+respectively. After normalization and deduplication, a can-
+didate is labeled positive if it exactly matches, contains, or
+achievesatoken-levelF1ofatleast0.8withareferencecon-
+text.Referencecontextsmissingfromtheinitialretrievalare
+addedtothepool,andlower-rankedpassagesareremovedto
+retain exactly 50 candidates per query. ScholarQA-Bio and
+
+Dataset Task Format Discipline Size Evaluation
+SciFact Claim→Label (True or False) Biomedicine 208 Acc, Cite
+PubMedQA Question→Answer (Yes, No) Biomedicine 843 Acc, Cite
+QASA Question→Answer (Long-form) Computer Science 1,375 ROUGE-L, Cite
+ScholarQA-CSQuestion→Answer (Long-form) Computer Science 100 Rub-Acc, Rub-Score, Cite
+ScholarQA-BioQuestion→Answer (Long-form) Biomedicine 1,451 Rub-Score, Cite
+ScholarQA-NeuroQuestion→Answer (Long-form) Neuroscience 1,308 Rub-Score, Cite
+ScholarQA-MultiQuestion→Answer (Long-form) Computer Science, Physics, Biomedicine 108 Rub-Score, Cite
+Table 4: Dataset statistics and evaluation settings of ScholarQABench.
+Dataset Queries Label Type Reference Source Provided Ctxs. Avg./Query Inserted Ctxs. Candidate Pool
+SciFact 208 Gold Provided gold contexts 208 1.00 179 50
+PubMedQA 843 Gold Provided gold contexts 843 1.00 840 50
+QASA 1,375 Gold Indexed original contexts 2,043 1.49 1,275 50
+ScholarQA-CS100 Pseudo-gold Expert source snippets 400 4.00 400 50
+ScholarQA-Multi108 Pseudo-gold Curated input contexts 647 5.99 495 50
+Table 5: Statistics of ScholarQABench-Rerank. Each query contains 50 candidates. Provided Ctxs. denotes the gold or curated
+source contexts included within the original ScholarQABench task instances, while Inserted Ctxs. denotes the subset absent
+from the initial top-50 retrieval and subsequently inserted into the candidate pool.
+ScholarQA-Neuro are excluded because they only contain
+questions and do not provide reference contexts for rerank-
+ingevaluation.Table5summarizestheresultingbenchmark.
+We evaluate the ranked candidate lists using Recall@k,
+MAP@k, and nDCG@k. Letgq,i ∈ {0,1}denote the gold
+label at rankifor queryq, and letG q = P50i=1 gq,i be thenumberofpositivecandidatesinitspool.Recall@kmeasures
+the proportion of positive candidates recovered within the
+firstkpositions:
+Recallq@k=
+Pk
+i=1 gq,i
+Gq
+.
+Average precision rewards placing positive candidates at
+higher ranks:
+APq@k=
+Pk
+i=1 gq,i Pq(i)
+min(Gq, k) ,P q(i) =
+Pi
+j=1 gq,j
+i .
+MAP@kis the mean ofAP q@kover all queries. Finally,
+nDCG@kevaluates ranking quality with logarithmic posi-
+tion discount:
+nDCGq@k= DCGq@kIDCGq@k ,DCG q@k=
+kX
+i=1
+gq,i
+log2(i+ 1),
+whereIDCG q@kistheDCGoftheidealordering.Allmet-
+rics are macro-averaged across queries, reported as percent-
+ages, and evaluated atk= 10in our experiments.
+B Training Data Construction
+Construction Pipeline
+QA data extraction.We construct the training data from
+Open Scholar Training Data (Asai et al. 2026), which con-
+tains 130,135 scientific instruction-tuning instances. We re-
+tain thesingle_paper_qaandmultipaper_qasub-
+setsandparseeachinstanceintoaquestion,ananswer,anda
+listofcandidatepassages.Foreachpassage,itsreferencein-
+dex,title,andtextareextractedfromthereferencesectionof
+the original input. This process yields 25,915 QA instances
+for subsequent annotation.
+LLM-based relevance annotation.We use Qwen3-Max
+API to produce two complementary forms of ranking super-
+vision.Atthepassagelevel,oneannotationrequestiscreated
+for each QA instance, where the model ranks all candidate
+passages according to their contribution to answering the
+questionandsupportingthecompleteanswer.Atthesentence
+level,onerequestiscreatedforeverycandidatepassage.The
+model first divides the passage into sentence-like units and
+then assigns each unit a relevance rank while preserving its
+original textual position. The answer is supplied to sentence
+annotationonlyforsingle-paperinstancescontainingexactly
+one cited passage; otherwise, sentence relevance is judged
+from the question and passage alone. The complete prompt
+templatesareprovidedinTables13and14,wheretheanno-
+tationrationalesandsummariesareretainedonlyforquality
+examination and excluded from model training.
+
+Ranking consolidation.The model outputs are parsed as
+structured JSON and aligned with their original QA in-
+stances. Sentence units marked as fragments or containing
+nomeaningfulcontentareremoved.Theremainingsentence
+ranks are converted into strict consecutive rankings by sort-
+ing first by the annotated rank and then by original position.
+Passage rankings are similarly normalized using the anno-
+tated rank, relevance score, and original position as succes-
+sive criteria. This deterministic normalization resolves ties
+while preserving the LLM-produced preference order.
+Role enrichment.Each retained sentence is processed by
+apretrainedscientificfacetmodelUniFAR(Douetal.2026)
+to obtain the soft distribution of its semantic role over back-
+ground, method, and result. Long passages are divided into
+token-boundedwindowsbeforeroleannotationsothatevery
+sentence receives a role distribution without truncation. The
+resultingtrainingrecordcontainsthequestion,passagerank-
+ings, sentence texts and rankings, and sentence-level role
+distributions, providing the supervision required by both the
+local scorer and the global graph reranker.
+Training Data Statistics and Validation
+Statistics within the pipeline.Table 6 summarizes the
+data retained at each stage of the construction pipeline.
+We collect 25,915 QA instances, including 14,098 single-
+paper and 11,817 multi-paper examples, and obtain 257,546
+question-passage pairs. Each QA instance produces one
+passage-ranking request, while every question-passage pair
+is processed bythe sentence-ranking annotator. Theseanno-
+tations yield 2,331,189 sentence units before filtering. We
+remove 192,264 units marked as fragments by the LLM and
+21 additional short units, retaining 2,138,904 sentences in
+256,896 non-empty passages.
+Automatic validation.We validate the final data at the
+instance, passage, and sentence levels. Required fields are
+checked for every instance, and passage and sentence ranks
+must each form a complete permutation from 1 to the corre-
+sponding candidate count. We further require every retained
+passage to contain at least one valid sentence and every sen-
+tence to contain both raw role attention and a normalized
+three-dimensional role distribution. The final data contain
+no missing rank, empty passage, malformed rank sequence,
+missing role field, or non-normalized role distribution. The
+hard labels induced by the largest role probability comprise
+35.46%background,32.21%method,and32.33%resultsen-
+tences, indicating that role annotation does not collapse to a
+single category.
+Manual quality examination.We additionally conduct a
+manual quality check by sampling 15 single-paper and 15
+multi-paper instances and inspect passages and sentences
+drawn from the top, middle, and bottom ranking regions.
+Two human annotators independently evaluate four criteria:
+(1) whether sentence segmentation is faithful to the source
+andsemanticallycomplete;(2)whetherahigher-rankedsen-
+tence is more useful to the question than a lower-ranked
+one; (3) whether passage rankings prioritize central and, for
+multi-paper questions, complementary information; and (4)
+Item Count
+QA instances 25,915
+single-paper / multi-paper 14,098 / 11,817
+Raw question–passage pairs 257,546
+Passage-ranking requests 25,915
+Sentence-ranking requests 257,546
+Sentence units before filtering 2,331,189
+LLM-marked fragments removed 192,264
+Additional short units removed 21
+Retained sentences 2,138,904
+Passages with retained sentences 256,896
+Table6:Trainingdatastatisticsofeachstageintheconstruc-
+tion pipeline.
+Criterion Accepted Rate
+Sentence segmentation 2488 / 2488 100.00%
+Sentence ranking 29 / 30 96.67%
+Passage ranking 14 / 15 93.33%
+Role assignment 43 / 45 95.56%
+Table 7: Results of the manual quality check. Accepted in-
+stances are determined after resolving disagreements be-
+tween the two annotators.
+whether the highest-probability role agrees with the sen-
+tence’s semantic function. For sentence segmentation, we
+examine all 2,488 sentence units contained in the 30 sam-
+pledinstancesforsourcefidelityandsemanticcompleteness.
+Sentence-ranking quality is assessed once for each instance
+by comparing sentences from different ranking regions, re-
+sulting in 30 instance-level judgments. Passage ranking is
+examined on the 15 multi-paper instances, where the an-
+notators consider both relevance to the central information
+need and complementarity among highly ranked passages.
+Role assignment is evaluated on 45 sentences, comprising
+15examplessampledfromeachpredictedrole:background,
+method, and result.
+As shown in Table 7, all 2,488 inspected sentence units
+preserve faithful and semantically complete content from
+their source passages. Sentence rankings are accepted in 29
+of the 30 instances, indicating that the annotations reliably
+prioritize more useful sentences across different ranking re-
+gions. Passage rankings satisfy the relevance and comple-
+mentarity criteria in 14 of the 15 multi-paper instances. The
+slightly lower rate reflects the greater difficulty of prioritiz-
+inginformationacrossmultiplepaperswhileavoidingredun-
+dantcontent.Finally,43ofthe45examinedroleassignments
+agreewiththesemanticfunctionsoftheirsentences.Thetwo
+disagreementsinvolvesentenceswithoverlappingfunctions,
+further supporting the use of soft role distributions. Overall,
+the results indicate that the constructed data provide reli-
+able supervision for both fine-grained sentence scoring and
+cross-passage reranking.
+
+Dataset Single-Paper Multi-Paper
+PubMedQA SciFact QASA ScholarQA-CS ScholarQA-Multi ScholarQA-Bio ScholarQA-Neuro
+RerankingMAP@10nDCG@10MAP@10nDCG@10MAP@10nDCG@10MAP@10nDCG@10MAP@10nDCG@10– – – –
+seed=13 84.73 88.83 67.85 76.14 63.98 66.81 89.76 92.04 30.46 41.29 – – – –
+seed=42 84.25 87.69 67.91 76.33 64.12 67.23 89.68 92.02 30.51 41.42 – – – –
+seed=2027 84.56 88.12 67.54 75.88 63.77 66.50 89.55 91.80 30.23 41.07 – – – –
+Avg. 84.51 88.21 67.77 76.12 63.96 66.85 89.66 91.95 30.40 41.26 – – – –
+Std.±0.20±0.47±0.16±0.18±0.14±0.30±0.09±0.11±0.12±0.14– – – –
+GenerationAcc Cite Acc Cite R-L Cite Rub-Acc Cite Rub-Score Cite Rub-Score Cite Rub-Score Cite
+seed=13 84.67 77.92 83.17 55.10 20.38 47.76 62.44 39.42 4.006 52.74 4.240 54.87 4.152 53.80
+seed=42 84.48 77.58 82.96 54.89 20.32 47.80 62.15 39.21 4.028 52.83 4.256 55.11 4.141 53.72
+seed=2027 84.39 77.13 82.88 54.74 19.87 47.54 62.50 39.53 4.003 52.67 4.228 54.63 4.133 53.46
+Avg. 84.51 77.54 83.00 54.91 20.19 47.70 62.36 39.39 4.012 52.75 4.241 54.87 4.142 53.66
+Std.±0.12±0.32±0.12±0.15±0.23±0.11±0.15±0.13±0.011±0.07±0.011±0.20±0.008±0.15
+Table 8: Reranking and generation performance of LoG-Reranker across three random seeds. Avg. and Std. denote the mean
+and standard deviation over the three runs, respectively.
+C Implementation and Hyperparameters
+Hyperparameter Sensitivity
+Table9examinesthesensitivityofLoG-Rerankertotherole
+supervisionweightandthreegraph-constructionparameters.
+Performanceremainsrelativelystablearoundthedefaultcon-
+figuration on both ScholarQA-CS and ScholarQA-Multi, in-
+dicatingthatthemodeldoesnotdependonanarrowlytuned
+parametersetting.Amoderateλ roleprovidesthebestbalance
+between sentence-role supervision and the primary ranking
+objective, whereas excessively weak or strong role supervi-
+sion reduces ranking quality. For graph construction, lower
+similarity thresholds and larger local-score thresholds in-
+troduce less constrained cross-passage connections, while
+overly restrictive values produce sparse graphs with limited
+relational information. Similarly, retaining too few similar-
+ity neighbors restricts cross-passage propagation, whereas a
+large neighborhood introduces redundant or weakly related
+sentences. Althoughk= 16yields marginal gains, the im-
+provementisatmost0.07pointswhiledoublingtheneighbor
+limit.Overall,thedefaultconfigurationthereforeprovidesan
+effective balance between ranking quality, graph connectiv-
+ity, and computational efficiency.
+Random Seeds
+We evaluate the stability of LoG-Reranker using three ran-
+dom seeds: 13, 42, and 2027. Table 8 reports the individual
+results together with their means and standard deviations.
+The main results use seed 13, while the additional runs fol-
+low the same training and evaluation settings.
+LoG-Reranker exhibits low variance across both rerank-
+ing and generation tasks. Standard deviations for reranking
+metrics range from 0.09 to 0.47, with particularly stable re-
+sults on ScholarQA-CS and ScholarQA-Multi. For genera-
+tion,thestandarddeviationsareatmost0.23fortask-specific
+metrics and 0.32 for citation F1, while the three multi-paper
+Rub-Scores vary by no more than 0.011. The average re-
+sultsalsoremainclosetothoseobtainedwithseed13across
+all datasets. These results indicate that the improvements of
+Hyper-
+parameter Value ScholarQA-CS ScholarQA-MultiMAP@10nDCG@10MAP@10nDCG@10
+Default – 89.76 92.04 30.46 41.29
+Role loss
+weightλ role
+0.10 88.22 91.13 29.28 40.44
+0.25 88.79 91.25 30.10 40.81
+0.75 89.53 91.81 30.51 41.12
+1.00 89.68 91.57 30.45 41.33
+Similarity
+thresholdτ sim
+0.65 89.12 90.99 30.19 40.96
+0.70 89.34 91.26 30.34 41.03
+0.80 89.77 91.95 30.49 41.18
+0.85 89.72 91.97 30.45 41.22
+Local-score
+thresholdδ
+0.15 89.87 92.00 30.45 41.19
+0.20 89.66 91.89 30.43 41.21
+0.30 89.12 91.64 30.08 40.87
+0.35 88.75 91.43 29.91 40.10
+Similarity
+neighborsk
+2 87.98 90.55 29.01 39.86
+4 88.74 91.23 30.17 40.72
+12 89.78 92.02 30.51 41.26
+16 89.83 92.10 30.53 41.33
+Table 9: Hyperparameter sensitivity on ScholarQA-CS and
+ScholarQA-Multi. Each parameter is varied independently
+whiletheothersremainattheirdefaultconfiguration:λ role =
+0.5,τ sim = 0.75,δ= 0.25, andk= 8.
+LoG-Rerankerarerobusttorandominitializationandarenot
+driven by a particular training run.
+D Additional Experiments
+Efficiency and Graph Complexity
+Table 10 compares the end-to-end reranking efficiency and
+graph complexity of all methods on the full ScholarQA-CS
+dataset. Each method reranks the same pool of 50 candidate
+passages per query. Latency is the average wall-clock time
+per query, while memory denotes peak local GPU memory
+usage. Parameter counts include all locally loaded model
+components. For methods relying on remote APIs, server-
+
+sideparametersandmemoryconsumptionarenotobservable
+and are therefore marked as unavailable.
+Cross-encoders and the lightweight RECOMP model
+achieve the lowest latency because they do not explicitly
+model relations among sentences from different passages.
+In contrast, LLM-based methods incur substantially higher
+computational cost. RankZephyr requires 7.24B parameters
+and15.48GBofGPUmemory,whileCoRanktakes291.335
+seconds per query because of its multi-stage API-based in-
+ference. EXIT is also computationally expensive, requiring
+2.51Bparameters,15.20GBofmemory,and63.113seconds
+perquery.Theseresultsillustratetheconsiderableefficiency
+costofapplyinglargelanguagemodelstopassagereranking.
+Among sentence graph-based methods, LoG-Reranker
+provides the most efficient end-to-end inference. Its aver-
+age latency is 2.426 seconds, making it approximately2.6×
+fasterthanChainRAGand40.2×fasterthanSentGraph.Un-
+like these two methods, LoG-Reranker performs reranking
+entirelywithlocallydeployedmodelsanddoesnotintroduce
+remote API latency. Its complete local and global reranking
+pipelinecontains152.52Mparameters,comprising149.85M
+parameters in the local reranker and 2.67M in the global
+reranker. This model size is close to that of GTE-Reranker
+and substantially smaller than those of BGE-Reranker, OS-
+Reranker,RankZephyr,andEXIT.Theadditionalgraphrea-
+soning increases peak memory to 3.21GB, but the require-
+ment remains far below those of the large-model baselines.
+LoG-Reranker also constructs a more compact but more
+richly connected evidence graph. It retains 530.6 sentence
+nodes on average, compared with 577.2 for both ChainRAG
+and SentGraph, corresponding to an8.1%reduction. Mean-
+while, its graph contains 3387.3 unique relation pairs on av-
+erage, which is62.4%more than ChainRAG and more than
+fourtimesthatofSentGraph.Thiscombinationindicatesthat
+LoG does not obtain global evidence coverage by retaining
+more sentences. Instead, it forms richer connections among
+a smaller set of selected evidence units. Overall, the results
+demonstrate that LoG-Reranker achieves a balance between
+graph expressiveness and practical inference efficiency.
+Method Params. Latency(S)Memory(GB)Nodes Edges
+Cross-encoder
+BGE-Reranker 567.8M 1.092 2.00 – –
+GTE-Reranker 149.6M 0.524 1.06 – –
+OS-Reranker 559.9M 0.651 1.96 – –
+LLM-based
+RankZephyr 7.24B 13.538 15.48 – –
+CoRank API 291.335 – – –
+Fine-grained
+RECOMP 109.5M 0.421 0.70 – –
+EXIT 2.51B 63.113 15.20 – –
+Sentence graph-based
+ChainRAG 696.7M + API 6.208 2.06 577.2 2085.9
+SentGraph 136.8M + API 97.629 0.94 577.2 780.6
+LoG-Reranker152.5M 2.426 3.21 530.6 3387.3
+Table10:EfficiencyandgraphcomplexityontheScholarQA-
+CS dataset with 50 candidate passages per query.
+Input Length and Generation Quality
+We analyze input length as an outcome of reranking
+rather than enforcing an identical token budget. Different
+rerankers naturally produce evidence at different granular-
+ities: passage-level methods preserve complete passages,
+whereas sentence-level methods select or organize fine-
+grained evidence. Imposing a fixed token budget would
+require truncating the native outputs of some methods or
+supplementing others with lower-ranked evidence, thereby
+changingthererankingdecisionsbeingevaluated.Wethere-
+fore retain the native top-10 outputs of each method and use
+the same generator and generation prompt in all settings.
+Table 11 shows that generation quality is not determined
+simply by providing more tokens. On both datasets, LoG-
+Reranker uses fewer input tokens than every passage-level
+baseline while achieving the best generation and citation re-
+sults. In ScholarQA-CS, LoG obtains a Rub-Acc of 62.44
+and a citation score of 39.42 with 3173 input tokens, com-
+paredwithapproximately6600–6800tokensforthestrongest
+full-passage rerankers. The same trend holds in ScholarQA-
+Multi, where LoG achieves the highest Rub-Score of 4.006
+and citation score of 52.74 using only 1991 tokens.
+Among sentence-level methods, very short inputs do not
+necessarily lead to strong generation. RECOMP and EXIT
+substantially reduce input length but also lose important
+supporting evidence, resulting in lower rubric and citation
+scores. LoG instead enriches selected main sentences with
+targeted local and cross-passage evidence. This produces
+longer inputs than aggressive sentence compressors but re-
+mainsconsiderablymorecompactthanpassage-levelrerank-
+ing. The consistent improvements across all four generation
+metrics suggest that LoG selects and organizes more task-
+criticalevidence,achievingabetterbalancebetweencontext
+compactness and evidence completeness.
+Detailed Ablation Results
+Table12furtherisolatesthecontributionsofindividualcom-
+ponentswithinthelocalscoring,globalgraphreranking,and
+structured context stages.
+Local sentence modeling.Removing contextual encod-
+ing causes the largest degradation among the local vari-
+ants, reducing Rub-Acc by 3.07 points on ScholarQA-CS
+andRub-Scoreby0.153onScholarQA-Multi.Thisconfirms
+that sentence relevance cannot be estimated reliably with-
+out preserving its passage context. Removing either the role
+or intent head also consistently reduces ranking and genera-
+tion quality, with the larger decline from removing the role
+headindicatingthatsentencefunctionprovidesaparticularly
+important signal for fine-grained selection.
+Graph structure and relation modeling.Cross-passage
+edges provide the strongest contribution within the global
+stage. Their removal decreases nDCG@10 by 2.81 and 2.64
+points on the two tasks and produces the lowest ScholarQA-
+MultiRub-Scoreof3.711.In-passageedgesarelikewiseim-
+portantforretaininglocalcontinuity.Thedeclinescausedby
+removingedgeconstraintsorrelationtypesfurthershowthat
+graph quality depends not only on adding connections, but
+alsoonfilteringanddistinguishingtheirrelationalsemantics.
+
+Method Level ScholarQA-CS ScholarQA-Multi
+Input Tokens Rub-Acc Cite Input Tokens Rub-Score Cite
+BGE-Reranker Passage 6761.27 60.86 36.23 3239.31 3.910 52.00
+GTE-Reranker Passage 6659.04 59.56 31.02 3068.59 3.975 49.97
+OS-Reranker Passage 6749.36 61.72 37.08 3215.95 3.923 51.71
+RankZephyr Passage 3569.38 58.70 32.68 2873.06 3.871 47.24
+CoRank Passage 6636.51 61.15 35.89 3001.44 3.964 50.95
+RECOMP Sentence 1340.08 55.39 33.81 1434.70 3.735 41.36
+EXIT Sentence 881.61 54.80 37.51 902.56 3.682 37.16
+ChainRAG Sentence 2020.62 59.47 38.76 1376.48 3.753 48.98
+SentGraph Sentence 2364.23 61.32 38.14 1513.68 3.797 49.23
+LoG-RerankerSentence 3173.1162.44 39.421991.144.006 52.74
+Table 11: Generation performance and average input length on ScholarQA-CS and ScholarQA-Multi.
+ScholarQA-CS ScholarQA-Multi
+MAP@10nDCG@10Rub-Acc Cite MAP@10nDCG@10Rub-Score Cite
+Full LoG-Reranker 89.76 92.04 62.44 39.42 30.46 41.29 4.006 52.74
+w/o contextual 87.12 89.46 59.37 38.59 28.25 38.78 3.853 51.67
+w/o role-head 87.96 90.43 61.23 38.87 29.02 39.86 3.882 51.88
+w/o intent-head 88.54 91.08 62.12 39.21 29.85 40.77 3.958 52.23
+w/o intra-passage edges 87.54 90.15 60.01 38.66 28.79 39.14 3.867 51.93
+w/o cross-passage edges 87.15 89.23 59.38 38.13 28.24 38.65 3.711 51.16
+w/o edge constraints 89.03 91.26 61.85 39.04 29.41 40.82 3.876 52.06
+w/o edge types 88.24 90.57 61.09 38.37 28.93 40.15 3.788 51.93
+w/o adjacency expansion – – 62.23 39.50 – – 3.895 52.65
+w/o similarity expansion – – 62.31 39.39 – – 3.912 52.72
+Table 12: Detailed ablation results on ScholarQA-CS and ScholarQA-Multi.Dashes indicate variants that modify only the
+structured generation context and leave reranking results unchanged.
+Structured context expansion.Removing adjacency or
+similarityexpansiondoesnotaltersentencerankingsbutlow-
+ersthetask-specificgenerationscores.Adjacencyexpansion
+yields the larger benefit, particularly on ScholarQA-Multi,
+suggesting that restoring local sentence context is impor-
+tant after fine-grained selection. Citation F1 changes only
+marginallyforthesevariants,indicatingthatneighborexpan-
+sion primarily improves the completeness and organization
+of the synthesis rather than source attribution.
+
+System Message
+You are a careful scientific data annotator. Return valid JSON only.
+User Prompt
+Task: sentence-level relevance ranking inside one scientific passage.
+Given a question and one candidate passage, split the passage text into sentence-like units, preserve their original order, and assign each
+unit a relevance rank for answering the question.
+Ranking rules:
+- Rank 1 is the most useful sentence for answering the question.
+- Rank by answerability and evidence utility, not by broad topical similarity or lexical overlap alone.
+- Prioritize evidence in this order:
+1. Sentences that explicitly answer the question or state the key contrast/relation.
+2. Sentences that explain the specific mechanisms, dimensions, variables, or evidence needed to understand that answer.
+3. Sentences that establish the compared entities, task setting, or study object.
+4. Weak conceptual interpretation or paper-level significance that mentions answer-related concepts but does not state the answer.
+5. Generic experimental methods, instrument lists, irrelevant background, or incomplete fragments.
+- Do not over-rank meta-commentary such as novelty, importance, or broad interpretation unless it directly supports answering the
+question.
+- Rationales must describe the evidence semantics in the passage. Do not say or imply that a sentence is important because it appears in,
+matches, or is cited by the gold answer.
+- Pure method or instrumentation sentences should be ranked very low unless they themselves identify answer-specific mechanisms,
+variables, or dimensions.
+- For overview, review, survey, or current-state questions, rank sentence-like units higher when they state representative findings, major
+trends, categories, limitations, debates, or future directions, rather than isolated details.
+- Use consecutive integer ranks from 1 to N, where N is the number of sentence-like units you output.
+- Output sentence-like units in their original passage order, not ranked order. This is mandatory: do not sort the output by rank.
+- Keep each unit faithful to the source text. Do not invent content.
+- If a sentence contains separable clauses with clearly different evidence value, you may split it into smaller sentence-like units, but
+preserve the original text order.
+- If a passage has bullet-like fragments or formulas, group them into readable sentence-like units.
+-Ifasentence-likeunitisanincompletefragmentcausedbypassagetruncationorrandomsplitting,keepitandsetis_fragment=true.
+Otherwise setis_fragment=false.
+- Assignrelevance_scoreafter deciding the rank. Prefer differentiated scores for short passages:
+5 = direct answer / decisive evidence;
+4 = key supporting mechanism or explanatory evidence;
+3 = useful context that establishes entities or setting;
+2 = weak conceptual/meta interpretation or indirect context that still mentions answer-related concepts;
+1 = generic method-only/instrumentation, irrelevant background, or incomplete fragment.
+- Scores should be broadly consistent with ranks: lower-ranked units should not receive stronger scores than higher-ranked units unless
+the rationale explains a near-tie.
+Question:{question}
+Gold answer is provided only as auxiliary evidence for this cited passage. Use it to understand what information is answer-supporting,
+but do not copy it.
+Gold answer:{answer}
+Passage index:{passage_index}
+Passage title:{passage_title}
+Passage text:{passage_text}
+Return strict JSON only with this schema:
+{
+"sentences": [
+{
+"sentence_id": 0,
+"sentence": "original sentence text",
+"relevance_rank": 1,
+"relevance_score": 5,
+"is_fragment": false,
+"rationale": "short evidence-focused reason; do not mention gold answer or annotation
+process"
+}
+]
+}
+Table 13: Sentence-level ranking prompt used for training data construction.
+
+System Message
+You are a careful scientific data annotator. Return valid JSON only.
+User Prompt
+Task: passage-level relevance ranking across candidate scientific passages.
+Given a question, candidate passages, and a gold answer, rank the passages by how useful they are for answering the question and
+supporting the answer.
+Ranking rules:
+- Rank 1 is the most useful passage for answering the question and supporting the answer.
+- Use consecutive integer ranks from 1 to N, where N is the number of passages.
+- Output passages in their original input order, not ranked order. This is mandatory: do not sort the output by rank.
+- Base your judgment on whether the passage text provides evidence needed to construct or support the answer.
+- Rank passages by global answer contribution, not only by independent topical similarity.
+- For multi-part, comparative, or synthesis questions, prefer passages that contribute complementary evidence covering different aspects
+of the answer, such as contrasts, mechanisms, populations, settings, limitations, quantitative evidence, or implications.
+-Preferpassagescentraltothemaininformationneedovernarrowexamples,isolatedstatistics,orrepeatedevidenceforanalready-covered
+aspect.
+- For comparison or contrast questions, passages that explicitly discuss differences, trade-offs, or contrasting conditions/settings should
+generally rank higher than passages discussing only one side in isolation.
+- For overview, review, survey, or current-state questions, prioritize passages that cover major themes, representative findings, trends,
+limitations, debates, or future directions. Prefer complementary coverage across subtopics over repeated evidence for the same narrow
+point.
+- Consider marginal contribution: a passage is more valuable if it adds a new necessary aspect to the evidence pool, not merely because
+it repeats information found elsewhere.
+- Do not invent evidence not present in the passage.
+-Evidencesummariesmustdescribethepassagesemantics.Donotsayorimplythatapassageisimportantbecauseitappearsin,matches,
+or is cited by the gold answer.
+-Evidencesummariesshouldbrieflystate:(1)whataspectofthequestionthepassagesupports,(2)whatevidenceorfindingsitprovides,
+and, when useful, (3) how it complements other passages.
+- Assignrelevance_scoreafter deciding the rank:
+5 = central evidence that directly supports major parts of the answer or provides indispensable comparative/synthesis information;
+4 = strong supporting evidence covering an important aspect, mechanism, population, setting, limitation, or implication;
+3 = partially useful evidence or context for a secondary aspect;
+2 = weakly related contextual/background discussion;
+1 = irrelevant, generic background, repeated low-value evidence, or off-topic content.
+- Scores should be broadly consistent with ranks; use the rationale to clarify near-ties or complementary but non-central passages.
+Question:{question}
+Gold answer:{answer}
+Candidate passages:{candidate_passages}
+Return strict JSON only with this schema:
+{
+"passages": [
+{
+"original_position": 0,
+"passage_index": 0,
+"relevance_rank": 1,
+"relevance_score": 5,
+"evidence_summary": "short evidence-focused reason; do not mention gold answer or
+annotation process"
+}
+]
+}
+Table 14: Passage-level ranking prompt used for training data construction.

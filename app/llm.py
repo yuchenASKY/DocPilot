@@ -12,6 +12,7 @@ DeepSeek、通义千问、智谱、Kimi 都提供「OpenAI 兼容接口」，
 
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import AsyncIterator
 
@@ -30,17 +31,34 @@ _OFFLINE_REPLY = (
 class LLMClient:
     def __init__(self) -> None:
         self.enabled = settings.llm_enabled
-        # 注意：HTTP 头只能是 ASCII。没配 Key 时不要把它塞进头里，
-        # 否则占位符里一旦有中文就会在构造客户端时抛 UnicodeEncodeError。
-        key = settings.openai_api_key.strip() if self.enabled else "not-configured"
-        self._client = httpx.AsyncClient(
-            base_url=settings.openai_base_url.rstrip("/"),
-            timeout=httpx.Timeout(60.0, connect=15.0),
-            headers={
-                "Authorization": f"Bearer {key}",
-                "Content-Type": "application/json",
-            },
-        )
+        # ★ 客户端不在这里创建（原因同 embedding.py）：httpx.AsyncClient 的连接池
+        #   绑定在「创建它时正在运行的那个循环」上，而模块导入时没有循环。
+        self._client: httpx.AsyncClient | None = None
+        self._client_loop: asyncio.AbstractEventLoop | None = None
+
+    @property
+    def client(self) -> httpx.AsyncClient:
+        """取「当前事件循环」下的 HTTP 客户端；循环换了就重建。
+
+        `asyncio.run()` 每次新建并关闭一个循环，pytest 默认每个用例一个循环 ——
+        复用挂在上一个已关闭循环上的旧客户端，就会
+        `RuntimeError: Event loop is closed`。所以按循环记账。
+        """
+        loop = asyncio.get_running_loop()
+        if self._client is None or self._client_loop is not loop:
+            # 注意：HTTP 头只能是 ASCII。没配 Key 时不要把它塞进头里，
+            # 否则占位符里一旦有中文就会在构造客户端时抛 UnicodeEncodeError。
+            key = settings.openai_api_key.strip() if self.enabled else "not-configured"
+            self._client = httpx.AsyncClient(
+                base_url=settings.openai_base_url.rstrip("/"),
+                timeout=httpx.Timeout(60.0, connect=15.0),
+                headers={
+                    "Authorization": f"Bearer {key}",
+                    "Content-Type": "application/json",
+                },
+            )
+            self._client_loop = loop
+        return self._client
 
     # ---------- 非流式 ----------
     async def chat(
@@ -66,7 +84,7 @@ class LLMClient:
             payload["tools"] = tools
             payload["tool_choice"] = "auto"
 
-        resp = await self._client.post("/chat/completions", json=payload)
+        resp = await self.client.post("/chat/completions", json=payload)
         resp.raise_for_status()
         data = resp.json()
         msg = data["choices"][0]["message"]
@@ -91,7 +109,7 @@ class LLMClient:
             "max_tokens": settings.llm_max_tokens,
             "stream": True,
         }
-        async with self._client.stream(
+        async with self.client.stream(
             "POST", "/chat/completions", json=payload
         ) as resp:
             resp.raise_for_status()
@@ -110,7 +128,12 @@ class LLMClient:
                     yield piece
 
     async def aclose(self) -> None:
-        await self._client.aclose()
+        """只关「当前循环」下的连接池（换过循环的旧客户端直接丢弃，见 embedding.py）。"""
+        client, loop = self._client, self._client_loop
+        self._client = None
+        self._client_loop = None
+        if client is not None and loop is asyncio.get_running_loop():
+            await client.aclose()
 
 
 # 模块级单例：全项目共用一个 LLMClient（也就共用一个连接池）。

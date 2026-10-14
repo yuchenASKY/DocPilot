@@ -71,6 +71,14 @@ def _normalize(text: str) -> str:
     PDF 抽出来的文本混着页眉页脚和多余空行，不清洗会污染切块结果
     （同一个句子被空行拆开、页码混进正文），所以这一步不能省。
     """
+    # ① 先清掉「代理对」字符。
+    # PDF 里偶尔会抽出数学字母这类需要代理对表示的字符（如 𝔸），
+    # 它们不是合法的 UTF-8 字符，直接写文件会抛
+    # UnicodeEncodeError: surrogates not allowed，导致**整篇文档**解析失败。
+    # 往返一次 UTF-16：合法的代理对合并成正常字符，落单的丢弃。
+    text = text.encode("utf-16", "surrogatepass").decode("utf-16", "ignore")
+
+    # ② 再统一换行、压缩空格
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     text = re.sub(r"[ \t]+", " ", text)
     text = re.sub(r"\n{3,}", "\n\n", text)

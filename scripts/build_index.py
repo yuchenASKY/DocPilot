@@ -37,8 +37,7 @@ async def main() -> None:
 
     print(f"[*] embedding 模式：{embedder.mode}")
     if args.rebuild:
-        vectorstore.store.vectors = vectorstore.store.vectors[:0]
-        vectorstore.store.metas = []
+        vectorstore.store.clear()      # 换 embedding 模型后必须走这里（会重置向量维度）
         print("[*] 已清空旧索引")
 
     total = 0

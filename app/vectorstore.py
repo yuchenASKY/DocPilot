@@ -37,6 +37,15 @@ class VectorStore:
             return 0
         new_vecs = np.asarray(vectors, dtype=np.float32)
 
+        # 换过 embedding 模型时给明确提示，别让 numpy 抛一句看不懂的话。
+        # （比如 "the array at index 0 has size 512 and the array at index 1 has size 1024"）
+        if len(self.metas) and new_vecs.shape[1] != self.vectors.shape[1]:
+            raise ValueError(
+                f"向量维度不匹配：本次是 {new_vecs.shape[1]} 维，库里已有 {self.vectors.shape[1]} 维。"
+                "换过 embedding 模型后必须重建索引："
+                "python scripts/build_index.py --rebuild"
+            )
+
         # 按 chunk_id 去重，重复入库时覆盖旧版本
         existing = {m["chunk_id"]: i for i, m in enumerate(self.metas)}
         keep_idx: list[int] = []
@@ -62,6 +71,19 @@ class VectorStore:
         ]
         _ = existing  # 保留变量便于调试
         return len(chunks)
+
+    # ---------- 清空 ----------
+    def clear(self) -> None:
+        """清空库（换 embedding 模型后重建时用）。
+
+        注意：**必须把列数也重置成当前的 embed_dim**。
+        写成 `self.vectors = self.vectors[:0]` 是错的 ——
+        空切片只把行数变成 0，**列数还是旧的 512**，
+        接着 add() 里 vstack 就会炸：
+        `ValueError: ... the array at index 0 has size 512 and the array at index 1 has size 1024`。
+        """
+        self.vectors = np.zeros((0, settings.embed_dim), dtype=np.float32)
+        self.metas = []
 
     # ---------- 查 ----------
     def search(

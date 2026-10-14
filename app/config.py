@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     embed_dim: int = 512           # 必须与所选模型匹配（bge-m3=1024、智谱 embedding-3=2048…）
     embed_api_key: str = ""        # 留空 -> 复用 OPENAI_API_KEY
     embed_base_url: str = ""       # 留空 -> 复用 OPENAI_BASE_URL
+    embed_batch_size: int = 10     # 单次请求最多发几条文本：阿里百炼上限 20，多数服务商 10
 
     # --- 检索（第 5 / 8 步用）---
     top_k: int = 5

@@ -1,0 +1,485 @@
+arXiv:2506.10635v1 [cs.IR] 12 Jun 2025
+Conversational Search:
+From Fundamentals to Frontiers in the LLM Era
+Fengran Mo
+Université de Montréal
+Montréal, Canada
+fengran.mo@umontreal.ca
+Chuan Meng
+University of Amsterdam
+Amsterdam, The Netherlands
+c.meng@uva.nl
+Mohammad Aliannejadi
+University of Amsterdam
+Amsterdam, The Netherlands
+m.aliannejadi@uva.nl
+Jian-Yun Nie
+Université de Montréal
+Montréal, Canada
+nie@iro.umontreal.ca
+Abstract
+Conversational search enables multi-turn interactions between
+users and systems to fulfill users’ complex information needs. Dur-
+ing this interaction, the system should understand the users’ search
+intent within the conversational context and then return the rele-
+vant information through a flexible, dialogue-based interface. The
+recent powerful large language models (LLMs) with capacities of
+instruction following, content generation, and reasoning, attract
+significant attention and advancements, providing new opportuni-
+ties and challenges for building up intelligent conversational search
+systems. This tutorial aims to introduce the connection between
+fundamentals and the emerging topics revolutionized by LLMs in
+the context of conversational search. It is designed for students,
+researchers, and practitioners from both academia and industry.
+Participants will gain a comprehensive understanding of both the
+core principles and cutting-edge developments driven by LLMs in
+conversational search, equipping them with the knowledge needed
+to contribute to the development of next-generation conversational
+search systems.
+CCS Concepts
+• Information systems→ Users and interactive retrieval ; •
+Computing methodologies→ Discourse, dialogue and prag-
+matics.
+Keywords
+Conversational information retrieval, Conversational search, Retrieval-
+augmented generation, Large language models
+ACM Reference Format:
+Fengran Mo, Chuan Meng, Mohammad Aliannejadi, and Jian-Yun Nie. 2025.
+Conversational Search: From Fundamentals to Frontiers in the LLM Era. In
+Proceedings of the 48th International ACM SIGIR Conference on Research and
+Development in Information Retrieval (SIGIR ’25), July 13–18, 2025, Padua,
+Permission to make digital or hard copies of all or part of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for profit or commercial advantage and that copies bear this notice and the full citation
+on the first page. Copyrights for components of this work owned by others than the
+author(s) must be honored. Abstracting with credit is permitted. To copy otherwise, or
+republish, to post on servers or to redistribute to lists, requires prior specific permission
+and/or a fee. Request permissions from permissions@acm.org.
+SIGIR ’25, July 13–18, 2025, Padua, Italy
+© 2025 Copyright held by the owner/author(s). Publication rights licensed to ACM.
+ACM ISBN 979-8-4007-1592-1/2025/07
+https://doi.org/10.1145/3726302.3731686
+Italy. ACM, New York, NY, USA, 4 pages. https://doi.org/10.1145/3726302.
+3731686
+1 Motivation
+Search engines are essential for modern society to fulfill users’ in-
+formation needs [ 58]. The initial ad-hoc search systems rely on
+keywords or short phrases as input queries, which cannot capture
+user search intent accurately with limited interactions [20, 44, 64].
+The recently developed conversational search [31, 43, 45, 47, 62]
+enables multi-turn interactions between users and systems to meet
+users’ complex information needs, supporting the flexibility of in-
+teractions. To further enhance interaction quality, conversational
+search systems are increasingly adopting mixed-initiative strate-
+gies, where both the user and the system can take the initiative at
+different points in a conversation [53]. Mixed-initiative enables the
+system to take initiative when appropriate [37], such as by asking
+clarifying questions in response to ambiguous queries [ 6], or by
+proactively providing background information or suggestions [42],
+ultimately leading to a more satisfying user experience.
+In the current era of large language models (LLMs) [10, 67, 68],
+powerful language models further improve the capacity of under-
+standing conversational context and complex queries. Besides, users
+are more used to interacting with systems in multiple turns. The
+flexibility of the conversation interface provides more opportunities
+for conversational interactions, especially based on the integration
+between the search engine and LLMs [23, 26, 54]. For example, the
+input could be the context-dependent query, task-oriented instruc-
+tion, multi-modal information, etc. Conversely, the output of the
+system could be in different forms – direct answer, search result
+page, summarization of the search results, clarification question,
+and so on. The various interactive modes of conversational search
+systems result in a possible paradigm shift of user information-
+seeking behavior – their preference from single-turn to multi-turn
+conversation. This ongoing shift underlies the potential of conver-
+sational search as a next-generation information-seeking system
+with new, broader opportunities and challenges.
+The build-up of a conversational system involves the integration
+of various components and techniques corresponding to differ-
+ent goals. For example, the conversation modeling, clarification
+requirement detection, and response generation should depend
+on a specific design with corresponding knowledge, whose indi-
+vidual performance would influence the whole workflow. Besides,
+
+SIGIR ’25, July 13–18, 2025, Padua, Italy Fengran Mo, Chuan Meng, Mohammad Aliannejadi, and Jian-Yun Nie
+the development of LLMs provides more possible techniques and
+opportunities to improve the systems, e.g., self-reflect, accurate
+relevance identification via reasoning, iterative actions planning,
+and retrieval-augmented response generation.
+To the best of our knowledge, the latest tutorial [12] on conver-
+sational search was presented at SIGIR 2022, which was before the
+emergence of the LLMs. Despite the existence of books [20, 58, 64],
+surveys [16, 25, 68], and a large body of research [ 17, 34, 46, 66]
+on conversational search, these materials do not systematically
+introduce the connection between fundamentals and the emerg-
+ing topics revolutionized by LLMs in the context of conversational
+search. Therefore, we believe that our tutorial will present novel
+points of view, useful to the researchers and practitioners in con-
+versational search, providing a clear view of the topic’s evolution
+with the rise of LLMs.
+2 Objectives
+Conversational search is a rapidly growing field, with new con-
+cepts and techniques being continuously developed. It is also a
+multi-discipline area, whose development requires contributions
+from multiple communities, e.g., information retrieval (IR), natural
+language processing (NLP), human-computer interaction (HCI),
+speech, and dialogue. With the recent advancement of LLMs, more
+potential integration mechanisms and applications are offered but
+are still underexplored, calling for more research.
+This tutorial is organized around two main components in con-
+versational search: (i) a survey-style overview of fundamentals and
+(ii) a deep dive into emerging topics shaped by the era of LLMs.
+In doing so, we aim to provide newcomers with a solid grounding
+in conversational search while offering fresh perspectives and in-
+sights to students, researchers, and practitioners who are already
+familiar with the field and seeking to explore its future directions.
+Concretely, this tutorial targets three primary objectives:
+• Provide a comprehensive overview of foundational topics in
+conversational search based on prior research.
+• Present an up-to-date review of available datasets, evaluation
+protocols, and real-world applications.
+• Explore emerging topics, including opportunities and challenges
+in developing conversational search systems with LLMs.
+3 Relevance
+Conversational search is an emerging topic in the core IR commu-
+nities by enabling the search in an interactive manner. It is also
+attractive in both industry and academia, and it is emerging as the
+new search paradigm [20]. Besides, the TREC Conversational As-
+sistance Track (CAsT) [13, 14, 22, 50] has been organized by TREC
+since 2019, which evolved to the TREC Interactive Knowledge As-
+sistance Track (iKAT) [1, 5] from 2023 to adapt the development of
+AI techniques. This tutorial aims to introduce the recent advances
+in conversational search with the development of LLMs for the
+increasing interest of SIGIR audiences.
+Several tutorials on the related topic have been presented in IR
+communities in recent years, including
+• Recent Advances in Conversational Information Retrieval at SI-
+GIR 2020 by Gao et al. [19].
+• Interactive Information Retrieval: Models, Algorithms, and Eval-
+uation at SIGIR 2021 by Zhai [65].
+• Conversational Information Seeking: Theory and Evaluation at
+CHIIR 2022 by Aliannejadi and Trippas [7].
+• Conversational Information Seeking: Theory and Application at
+SIGIR 2022 by Dalton et al. [12].
+Different from the previous tutorials before the development of
+LLMs, we will put more focus on introducing the connection be-
+tween fundamentals and emerging topics in conversational search
+based on LLMs. Although some previous tutorials [ 15, 27] have
+discussed the use of conversational agents in the era of LLMs, they
+primarily focus on general proactive dialogue systems (e.g., for task
+completion) rather than on search-oriented systems.
+4 Format and Schedule
+This tutorial is planned as a half-day event (3 hours), consisting of
+two 90-minute sessions with a break in between. It will be held in
+person. The proposed content will cover the following topics:
+Part I: Fundamentals of Conversational Search (90 minutes)
+Introduction to Conversational Search [10 min]. We will begin
+this session by defining conversational search. In particular, we will
+highlight the key characteristics that distinguish conversational
+search from traditional ad-hoc search. For example, user queries
+in conversational search are context-dependent user queries, i.e.,
+they may contain omissions, co-references, or ambiguities [ 62],
+making it challenging for ad-hoc search methods to capture the
+underlying information need [53]. Moreover, we will explore real-
+world applications that demonstrate the growing importance and
+impact of conversational search in practice.
+Datasets and Evaluation [10 min] . We will provide a quick
+overview of widely used datasets in conversational search. For in-
+stance, OR-QuAC [51], QReCC [9], and TREC CAsT 2019–2022 [13,
+14, 22, 50] are characterized by providing self-contained human-
+rewritten queries at each turn. We will also cover TopiOCQA [4],
+which introduces topic shifting, as well as the recent TREC iKAT
+2023–2024 [1, 5], which incorporates user personal information into
+conversational search. Regarding evaluation, we will introduce the
+metrics widely used in conversational search, such as traditional
+nDCG@3 [13, 14, 22, 50] and recent nugget-based evaluation [1].
+Conversational Search Paradigms [35 min] . Recovering the
+underlying information need from conversational history is a key
+challenge in conversational search [ 32]. To address it, two main
+approaches of conversational search methods have been developed:
+query-rewriting-based retrieval and conversational dense retrieval.
+• Query-rewriting-based retrieval methods first rewrite a query
+that is part of a conversation into a self-contained query, which
+is then reused by an ad-hoc retriever [29, 56, 57, 60, 61]. Query
+rewriting can be done by either query expansion or sequence gen-
+eration. The former adds terms from the conversational history
+to the current query, e.g., by training a binary term classifier [56],
+while the latter directly generates the reformulated queries using
+pre-trained language models [29, 61].
+• Conversational dense retrieval methods train a query encoder
+to encode the current query within the conversational history
+into a contextualized query embedding; the contextualized query
+
+Conversational Search: From Fundamentals to Frontiers in the LLM Era SIGIR ’25, July 13–18, 2025, Padua, Italy
+embedding is expected to better capture the information need of
+the current query in a latent space [28, 32, 33, 51, 62].
+Mixed Initiatives [35 min] . We will cover two core aspects of
+research on mixed-initiative interactions: what type of initiative to
+take and when to take it .
+• What type of initiative to take: clarification [6, 8, 63], elicit user
+preferences [52], ask for feedback [55], proactively provide back-
+ground information/suggestions [42], and so on.
+• When to take the initiative: clarification need prediction [ 30],
+system initiative prediction [37], and so on.
+Part II: Emerging Topics in the LLM Era (90 minutes)
+Automatic Evaluation for Conversational Search [20 min] .
+We will discuss how to automatically evaluate the ranking quality
+of conversational search systems. Recent studies explore two main
+approaches: query performance prediction (QPP) [41] and LLMs to
+generate relevance judgments.
+• QPP for conversational search [35, 36, 38, 40]. Existing QPP stud-
+ies have shown that traditional methods [38] and the new pro-
+posed approaches specifically designed for the conversational
+setting [18, 36] yield promising results in conversational search.
+• Using LLMs to generate relevance judgments for conversational
+search [2, 3, 40]. Existing studies either prompt LLMs [2, 3] or fine-
+tune them [40] to automatically generate relevance judgments,
+achieving high agreement with human annotators.
+Conversational Search with LLM-based Generation [30 min] .
+Conversational search based on the generative LLMs aims to inte-
+grate conversational search and LLMs. With the development of
+LLMs, conversational interfaces have become common in the inter-
+actions between users and systems. This changes the way to access
+information, and it generates new information needs and informa-
+tion access tasks, which heavily rely on the integration of search
+models and generative LLMs in an interactive manner [ 21, 44].
+Two potential directions are emerging: (i) generation-augmented
+retrieval (GAR) and (ii) retrieval-augmented generation (RAG) [68].
+• Conversational generation-augmented retrieval (GAR) [48]: GAR
+can enhance the search systems by generating pseudo data, pro-
+ducing fluent and consistent interaction, identifying the informa-
+tion value among the generation, and decomposing complex or
+instruction-based queries.
+• Conversational retrieval-augmented generation (RAG): Similarly,
+the conversational RAG [11, 24], which integrates conversational
+search results into the prompt that can contribute to improving
+truthfulness in the answer generation of LLMs by grounding
+answers in the retrieved documents, thus reducing hallucinations.
+It also helps increase information diversity.
+• Collaboration between retrieval and generation: The collabora-
+tion is generally expected, but the concrete solutions in conversa-
+tional search are still under-explored [54, 59], e.g., to determine
+the right time and way to do it. We will introduce different po-
+tential and promising directions in this context.
+Personalized Conversational Search [15 min] . The develop-
+ment of personalized conversational search systems has been driven
+by advancements in LLMs, aiming to tailor the generated outputs
+according to their users’ background and historical preferences.
+The additional challenge lies in dynamically incorporating users’
+profiles, preferences, or history into each turn [1, 5, 49]. We will in-
+troduce the recent advances in personalized conversational search.
+Agentic Conversational Search [10 min] . Compared with tra-
+ditional conversational search, the agentic conversational search
+systems have the following advantages: (i) the systems are expected
+to not only satisfy users’ information needs via search, but also
+complete users’ information tasks via actions and interactions of
+LLM-based agents; (ii) the systems can improve the mixed-initiative
+levels by automatically determining the suitable action for each
+query turn [37], and dynamically perform search via intelligent
+planning until satisfying the users [39]. We will discuss the possible
+directions of agentic/future conversational search systems.
+Summary and Discussion with the Audience [15 min] . In the
+final part of the tutorial, we will summarize the key topics covered
+in this tutorial and outline promising future research directions for
+conversational search in the era of LLMs. We will then open the
+floor for an interactive discussion with the audience to exchange
+ideas, insights, and questions.
+5 Materials
+To enhance the learning experience, we provide a comprehensive
+set of supporting materials in preparation for our tutorial. These re-
+sources will be made publicly available through a dedicated GitHub
+repository and Website, which will be accessible several weeks prior
+to the conference. This early access will allow participants ample
+time to explore and familiarize themselves with the content. Be-
+sides, some content is partly supported by a recent survey written
+by some of the oragnizers [44].
+Acknowledgments
+This research was partially funded by Ahold Delhaize, through
+AIRLab Amsterdam, and a discovery grant from the NSERC.
+References
+[1] Zahra Abbasiantaeb, Simon Lupart, Leif Azzopardi, Jeffery Dalton, and Moham-
+mad Aliannejadi. 2025. Conversational Gold: Evaluating Personalized Conversa-
+tional Search System using Gold Nuggets. SIGIR (2025).
+[2] Zahra Abbasiantaeb, Chuan Meng, Leif Azzopardi, and Mohammad Aliannejadi.
+2024. Can We Use Large Language Models to Fill Relevance Judgment Holes?
+[3] Zahra Abbasiantaeb, Chuan Meng, Leif Azzopardi, and Mohammad Aliannejadi.
+2025. Improving the Reusability of Conversational Search Test Collections.
+[4] Vaibhav Adlakha, Shehzaad Dhuliawala, Kaheer Suleman, Harm de Vries, and
+Siva Reddy. 2022. TopiOCQA: Open-domain Conversational Question Answering
+with Topic Switching. TACL 10 (2022), 468–483.
+[5] Mohammad Aliannejadi, Zahra Abbasiantaeb, Shubham Chatterjee, Jeffrey Dal-
+ton, and Leif Azzopardi. 2024. TREC iKAT 2023: A Test Collection for Evaluating
+Conversational and Interactive Knowledge Assistants. In SIGIR. 819–829.
+[6] Mohammad Aliannejadi, Julia Kiseleva, Aleksandr Chuklin, Jeff Dalton, and
+Mikhail Burtsev. 2021. Building and Evaluating Open-Domain Dialogue Corpora
+with Clarifying Questions. In EMNLP. 4473–4484.
+[7] Mohammad Aliannejadi and Johanne R Trippas. 2022. Conversational Informa-
+tion Seeking: Theory and Evaluation: CHIIR 2022 Half Day Tutorial. In CHIIR.
+[8] Mohammad Aliannejadi, Hamed Zamani, Fabio Crestani, and W. Bruce Croft.
+2019. Asking Clarifying Questions in Open-Domain Information-Seeking Con-
+versations. In SIGIR. 475–484.
+[9] Raviteja Anantha, Svitlana Vakulenko, Zhucheng Tu, Shayne Longpre, Stephen
+Pulman, and Srinivas Chappidi. 2021. Open-Domain Question Answering Goes
+Conversational via Question Rewriting. In NAACL. 520–534.
+[10] Arian Askari, Chuan Meng, Mohammad Aliannejadi, Zhaochun Ren, Evange-
+los Kanoulas, and Suzan Verberne. 2024. Generative Retrieval with Few-shot
+Indexing. arXiv preprint arXiv:2408.02152 (2024).
+[11] Yiruo Cheng, Kelong Mao, Ziliang Zhao, Guanting Dong, Hongjin Qian, Yongkang
+Wu, Tetsuya Sakai, Ji-Rong Wen, and Zhicheng Dou. 2024. CORAL: Benchmark-
+ing Multi-turn Conversational Retrieval-Augmentation Generation. In NAACL.
+
+SIGIR ’25, July 13–18, 2025, Padua, Italy Fengran Mo, Chuan Meng, Mohammad Aliannejadi, and Jian-Yun Nie
+[12] Jeffrey Dalton, Sophie Fischer, Paul Owoicho, Filip Radlinski, Federico Rossetto,
+Johanne R Trippas, and Hamed Zamani. 2022. Conversational information seek-
+ing: Theory and application. In SIGIR. 3455–3458.
+[13] Jeffrey Dalton, Chenyan Xiong, and Jamie Callan. 2020. CAsT 2020: The Conver-
+sational Assistance Track Overview. In TREC 2020.
+[14] Jeffrey Dalton, Chenyan Xiong, and Jamie Callan. 2021. TREC CAsT 2021: The
+Conversational Assistance Track Overview. In TREC 2021.
+[15] Yang Deng, Wenqiang Lei, Minlie Huang, and Tat-Seng Chua. 2023. Rethinking
+Conversational Agents in the Era of LLMs: Proactivity, Non-collaborativity, and
+Beyond. In SIGIR. 298–301.
+[16] Yang Deng, Lizi Liao, Wenqiang Lei, Grace Yang, Wai Lam, and Tat-Seng Chua.
+2025. Proactive Conversational AI: A Comprehensive Survey of Advancements
+and Opportunities. TOIS (2025).
+[17] Yang Deng, Lizi Liao, Zhonghua Zheng, Grace Hui Yang, and Tat-Seng Chua. 2024.
+Towards Human-centered Proactive Conversational Agents. In SIGIR. 807–818.
+[18] Guglielmo Faggioli, Nicola Ferro, Cristina Ioana Muntean, Raffaele Perego, and
+Nicola Tonellotto. 2023. A Geometric Framework for Query Performance Predic-
+tion in Conversational Search. In SIGIR. 1355–1365.
+[19] Jianfeng Gao, Chenyan Xiong, and Paul Bennett. 2020. Recent Advances in
+Conversational Information Retrieval. In SIGIR. 2421–2424.
+[20] Jianfeng Gao, Chenyan Xiong, Paul Bennett, and Nick Craswell. 2022. Neural
+approaches to conversational information retrieval. arXiv:2201.05176 (2022).
+[21] Peiyuan Gong, Jiamian Li, and Jiaxin Mao. 2024. CoSearchAgent: A Lightweight
+Collaborative Search Agent with Large Language Models. In SIGIR. 2729–2733.
+[22] Dalton Jeffrey, Xiong Chenyan, and Callan Jamie. 2019. CAsT 2019: The Conver-
+sational Assistance Track Overview. In TREC.
+[23] Bowen Jin, Hansi Zeng, Zhenrui Yue, Dong Wang, Hamed Zamani, and Jiawei
+Han. 2025. Search-R1: Training LLMs to Reason and Leverage Search Engines
+with Reinforcement Learning. arXiv preprint arXiv:2503.09516 (2025).
+[24] Yannis Katsis, Sara Rosenthal, Kshitij Fadnis, Chulaka Gunasekara, Young-Suk
+Lee, Lucian Popa, Vraj Shah, Huaiyu Zhu, Danish Contractor, and Marina
+Danilevsky. 2025. MTRAG: A Multi-Turn Conversational Benchmark for Evalu-
+ating Retrieval-Augmented Generation Systems. arXiv:2501.03468 (2025).
+[25] Kimiya Keyvan and Jimmy Xiangji Huang. 2022. How to Approach Ambiguous
+Queries in Conversational Search: A Survey of Techniques, Approaches, Tools,
+and Challenges. Comput. Surveys 55, 6 (2022), 1–40.
+[26] Xiaoxi Li, Guanting Dong, Jiajie Jin, Yuyao Zhang, Yujia Zhou, Yutao Zhu, Peitian
+Zhang, and Zhicheng Dou. 2025. Search-o1: Agentic Search-Enhanced Large
+Reasoning Models. arXiv preprint arXiv:2501.05366 (2025).
+[27] Lizi Liao, Grace Hui Yang, and Chirag Shah. 2023. Proactive Conversational
+Agents in the Post-ChatGPT World. In SIGIR. 3452–3455.
+[28] Sheng-Chieh Lin, Jheng-Hong Yang, and Jimmy Lin. 2021. Contextualized Query
+Embeddings for Conversational Search. In EMNLP. 1004–1015.
+[29] Sheng-Chieh Lin, Jheng-Hong Yang, Rodrigo Nogueira, Ming-Feng Tsai, Chuan-
+Ju Wang, and Jimmy Lin. 2021. Multi-stage Conversational Passage Retrieval: An
+Approach to Fusing Term Importance Estimation and Neural Query Rewriting.
+TOIS 39, 4 (2021), 1–29.
+[30] Lili Lu, Chuan Meng, Federico Ravenda, Mohammad Aliannejadi, and Fabio
+Crestani. 2025. Zero-Shot and Efficient Clarification Need Prediction in Conver-
+sational Search. In ECIR.
+[31] Kelong Mao, Zhicheng Dou, Haonan Chen, Fengran Mo, and Hongjin Qian. 2023.
+Large Language Models Know Your Contextual Search Intent: A Prompting
+Framework for Conversational Search. In EMNLP.
+[32] Kelong Mao, Zhicheng Dou, and Hongjin Qian. 2022. Curriculum Contrastive
+Context Denoising for Few-shot Conversational Dense Retrieval. In SIGIR.
+[33] Kelong Mao, Zhicheng Dou, Hongjin Qian, Fengran Mo, Xiaohua Cheng, and
+Zhao Cao. 2022. ConvTrans: Transforming Web Search Sessions for Conversa-
+tional Dense Retrieval. In EMNLP. 2935–2946.
+[34] Kelong Mao, Hongjin Qian, Fengran Mo, Zhicheng Dou, Bang Liu, Xiaohua Cheng,
+and Zhao Cao. 2023. Learning Denoised and Interpretable Session Representation
+for Conversational Search. In WWW. 3193–3202.
+[35] Chuan Meng. 2024. Query Performance Prediction for Conversational Search
+and Beyond. In SIGIR. 3077–3077.
+[36] Chuan Meng, Mohammad Aliannejadi, and Maarten de Rijke. 2023. Performance
+Prediction for Conversational Search Using Perplexities of Query Rewrites. In
+QPP++ 2023. 25–28.
+[37] Chuan Meng, Mohammad Aliannejadi, and Maarten de Rijke. 2023. System
+Initiative Prediction for Multi-turn Conversational Information Seeking. InCIKM.
+[38] Chuan Meng, Negar Arabzadeh, Mohammad Aliannejadi, and Maarten De Rijke.
+2023. Query Performance Prediction: From Ad-hoc to Conversational Search. In
+SIGIR. 2583–2593.
+[39] Chuan Meng, Negar Arabzadeh, Arian Askari, Mohammad Aliannejadi, and
+Maarten de Rijke. 2024. Ranked List Truncation for Large Language Model-based
+Re-Ranking. In SIGIR. 141–151.
+[40] Chuan Meng, Negar Arabzadeh, Arian Askari, Mohammad Aliannejadi, and
+Maarten de Rijke. 2025. Query Performance Prediction using Relevance Judg-
+ments Generated by Large Language Models. TOIS (2025).
+[41] Chuan Meng, Guglielmo Faggioli, Mohammad Aliannejadi, Nicola Ferro, and
+Josiane Mothe. 2025. QPP++ 2025: Query Performance Prediction and its Appli-
+cations in the Era of Large Language Models. In ECIR. 319–325.
+[42] Chuan Meng, Francesco Tonolini, Fengran Mo, Nikolaos Aletras, Emine Yilmaz,
+and Gabriella Kazai. 2025. Bridging the Gap: From Ad-hoc to Proactive Search in
+Conversations. In SIGIR.
+[43] Fengran Mo, Abbas Ghaddar, Kelong Mao, Mehdi Rezagholizadeh, Boxing Chen,
+Qun Liu, and Jian-Yun Nie. 2024. CHIQ: Contextual History Enhancement
+for Improving Query Rewriting in Conversational Search. arXiv preprint
+arXiv:2406.05013 (2024).
+[44] Fengran Mo, Kelong Mao, Ziliang Zhao, Hongjin Qian, Haonan Chen, Yiruo
+Cheng, Xiaoxi Li, Yutao Zhu, Zhicheng Dou, and Jian-Yun Nie. 2024. A Survey
+of Conversational Search. arXiv preprint arXiv:2410.15576 (2024).
+[45] Fengran Mo, Kelong Mao, Yutao Zhu, Yihong Wu, Kaiyu Huang, and Jian-Yun Nie.
+2023. ConvGQR: Generative Query Reformulation for Conversational Search. In
+ACL. 4998–5012.
+[46] Fengran Mo, Jian-Yun Nie, Kaiyu Huang, Kelong Mao, Yutao Zhu, Peng Li, and
+Yang Liu. 2023. Learning to Relate to Previous Turns in Conversational Search.
+In SIGKDD.
+[47] Fengran Mo, Chen Qu, Kelong Mao, Yihong Wu, Zhan Su, Kaiyu Huang, and
+Jian-Yun Nie. 2024. Aligning query representation with rewritten query and
+relevance judgments in conversational search. In CIKM.
+[48] Fengran Mo, Bole Yi, Kelong Mao, Chen Qu, Kaiyu Huang, and Jian-Yun Nie.
+2024. ConvSDG: Session Data Generation for Conversational Search. In WWW.
+[49] Fengran Mo, Longxiang Zhao, Kaiyu Huang, Yue Dong, Degen Huang, and Jian-
+Yun Nie. 2024. How to Leverage Personal Textual Knowledge for Personalized
+Conversational Information Retrieval. In CIKM.
+[50] Paul Owoicho, Jeff Dalton, Mohammad Aliannejadi, Leif Azzopardi, Johanne R
+Trippas, and Svitlana Vakulenko. 2022. TREC CAsT 2022: Going Beyond User
+Ask and System Retrieve with Initiative and Response Generation. In TREC.
+[51] Chen Qu, Liu Yang, Cen Chen, Minghui Qiu, W Bruce Croft, and Mohit Iyyer.
+2020. Open-retrieval Conversational Question Answering. In SIGIR. 539–548.
+[52] Filip Radlinski, Krisztian Balog, Bill Byrne, and Karthik Krishnamoorthi. 2019.
+Coached Conversational Preference Elicitation: A Case Study in Understanding
+Movie Preferences. In SIGDial. 353–360.
+[53] Filip Radlinski and Nick Craswell. 2017. A Theoretical Framework for Conversa-
+tional Search. In CHIIR. 117–126.
+[54] Weihang Su, Yichen Tang, Qingyao Ai, Zhijing Wu, and Yiqun Liu. 2024. DRAGIN:
+Dynamic Retrieval Augmented Generation based on the Real-time Information
+Needs of Large Language Models. In ACL. 12991–13013.
+[55] Johanne R. Trippas, Damiano Spina, Paul Thomas, Mark Sanderson, Hideo Joho,
+and Lawrence Cavedon. 2020. Towards a Model for Spoken Conversational
+Search. IPM 57, 2 (2020), 102162.
+[56] Svitlana Vakulenko, Nikos Voskarides, Zhucheng Tu, and Shayne Longpre. 2021.
+A Comparison of Question Rewriting Methods for Conversational Passage Re-
+trieval. In ECIR. 418–424.
+[57] Nikos Voskarides, Dan Li, Pengjie Ren, Evangelos Kanoulas, and Maarten de Rijke.
+2020. Query Resolution for Conversational Search with Limited Supervision. In
+SIGIR. 921–930.
+[58] Ryen W White and Chirag Shah. 2025. Information Access in the Era of Generative
+AI. Springer.
+[59] Peilin Wu, Xinlu Zhang, Wenhao Yu, Xingyu Liu, Xinya Du, and Zhiyu Zoey
+Chen. 2025. Do Retrieval-Augmented Language Models Adapt to Varying User
+Needs? arXiv preprint arXiv:2502.19779 (2025).
+[60] Zeqiu Wu, Yi Luan, Hannah Rashkin, David Reitter, Hannaneh Hajishirzi, Mari
+Ostendorf, and Gaurav Singh Tomar. 2022. CONQRR: Conversational Query
+Rewriting for Retrieval with Reinforcement Learning. In EMNLP. 10000–10014.
+[61] Shi Yu, Jiahua Liu, Jingqin Yang, Chenyan Xiong, Paul Bennett, Jianfeng Gao,
+and Zhiyuan Liu. 2020. Few-shot Generative Conversational Query Rewriting.
+In SIGIR. 1933–1936.
+[62] Shi Yu, Zhenghao Liu, Chenyan Xiong, Tao Feng, and Zhiyuan Liu. 2021. Few-
+Shot Conversational Dense Retrieval. In SIGIR. 829–838.
+[63] Hamed Zamani, Susan T. Dumais, Nick Craswell, Paul N. Bennett, and Gord
+Lueck. 2020. Generating Clarifying Questions for Information Retrieval. In
+WWW. 418–428.
+[64] Hamed Zamani, Johanne R Trippas, Jeff Dalton, Filip Radlinski, et al. 2023. Conver-
+sational Information Seeking. In Foundations and Trends in Information Retrieval.
+[65] ChengXiang Zhai. 2020. Interactive Information Retrieval: Models, Algorithms,
+and Evaluation. In SIGIR. 2444–2447.
+[66] Erhan Zhang, Xingzhu Wang, Peiyuan Gong, Yankai Lin, and Jiaxin Mao. 2024.
+USimAgent: Large Language Models for Simulating Search Users. In SIGIR.
+[67] Wayne Xin Zhao, Kun Zhou, Junyi Li, Tianyi Tang, Xiaolei Wang, Yupeng Hou,
+Yingqian Min, Beichen Zhang, Junjie Zhang, Zican Dong, et al. 2023. A Survey
+of Large Language Models. arXiv preprint arXiv:2303.18223 1, 2 (2023).
+[68] Yutao Zhu, Huaying Yuan, Shuting Wang, Jiongnan Liu, Wenhan Liu, Chenlong
+Deng, Haonan Chen, Zheng Liu, Zhicheng Dou, and Ji-Rong Wen. 2023. Large
+Language Models for Information Retrieval: A Survey. arXiv:2308.07107 (2023).
