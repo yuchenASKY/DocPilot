@@ -23,11 +23,11 @@ dependencies = [
 parse  = ["pypdf>=4.0"]              # 文档解析
 bm25   = ["rank-bm25>=0.2.2"]        # 混合检索
 vector = ["chromadb>=0.4.24"]        # 真实向量库
-graph  = ["langgraph>=0.0.40"]       # Agent 编排
+graph  = ["langgraph>=0.0.40", "grandalf>=0.8"]   # Agent 编排（grandalf 供 draw_ascii() 用）
 eval   = ["ragas>=0.1.5"]            # 评测
 cache  = ["redis>=5.0"]              # 缓存
 all    = ["pypdf>=4.0", "rank-bm25>=0.2.2", "chromadb>=0.4.24",
-          "langgraph>=0.0.40", "langchain-core>=0.1.40", "redis>=5.0"]
+          "langgraph>=0.0.40", "langchain-core>=0.1.40", "grandalf>=0.8", "redis>=5.0"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

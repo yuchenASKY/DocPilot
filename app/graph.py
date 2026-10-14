@@ -42,7 +42,11 @@ from typing import Any
 from . import retriever, tools
 from .config import settings
 from .llm import llm_client
-from .memory import get_session
+
+# 注意：memory 是**第 11 步才有的模块**，所以不要写在文件顶部 ——
+# 否则第 7~10 步 `import app.graph` 会直接 ModuleNotFoundError，
+# 连带 app.main / pytest / GET /health 全部起不来。
+# 改成在真正用到它的两个函数里延迟导入（见 run_pipeline / run_stream 开头）。
 
 SYSTEM_PROMPT = """你是 DocPilot，一个严谨的技术文档问答助手。
 
@@ -65,6 +69,48 @@ def _build_context(hits) -> tuple[str, list[dict]]:
     return "\n\n".join(blocks), sources
 
 
+_TOOL_HINTS = ("计算", "算一下", "多少钱", "多少秒", "时间", "今天", "现在", "最新", "搜索", "联网")
+
+
+_DIRECT_HINTS = ("你好", "你是谁", "谢谢", "hi", "hello")
+
+
+async def _route(question: str, use_tools: bool) -> str:
+    """判断这次该走哪条分支
+
+    这是整张图的「条件路由」节点，也是 LangGraph 最核心的能力。
+    它存在的意义是省钱省延迟：不是所有问题都值得走一遍
+    「embedding → 检索 → 融合 → 重排」，「你好」这种直接答就行。
+
+    返回值必须是下面三个字符串之一（graph 的 add_conditional_edges 认这三个）：
+      "direct"    → 简单问候/闲聊，直接生成，不检索
+      "tool"      → 需要算数、查时间、联网等，走工具调用分支
+      "retrieve"  → 需要查本地文档，走检索分支（默认兜底，最常用）
+
+    规格：
+      1. 返回值必须落在上面三个值里（返回别的会让图找不到边）；
+      2. `use_tools=False` 时不能返回 "tool"（否则会走进没有工具的分支）；
+      3. 拿不准的时候返回 "retrieve" —— 宁可多检索一次，也不要漏答。
+
+    提示：
+      - 最简实现：关键词命中。`_DIRECT_HINTS` / `_TOOL_HINTS` 就在上面，
+        注意「你好」要配合长度判断，否则「你好，帮我查下切块策略」会被误判成 direct；
+      - `q = question.lower()` 能让英文大小写不敏感；
+      - 升级路线（面试可以讲）：用一个小模型做意图分类，
+        或直接用第 9 步的 Function Calling 让模型自己选。
+        但要注意那会多一次 LLM 调用 —— 这就是「路由规则该多聪明」的取舍。
+    """
+    q = question.lower()
+
+    # 注意顺序：先判工具、再判闲聊。
+    # 反过来的话「你好，帮我算一下 1+1」会被误判成 direct。
+    if use_tools and any(h in q for h in _TOOL_HINTS):
+        return "tool"
+    if len(question) < 12 and any(h in q for h in _DIRECT_HINTS):
+        return "direct"
+    return "retrieve"          # 兜底：宁可多检索一次，也不要漏答
+
+
 async def run_pipeline(
     question: str,
     session_id: str = "default",
@@ -77,6 +123,9 @@ async def run_pipeline(
     返回值刻意做成扁平 dict（而不是自定义类）：它要直接喂给 FastAPI 的
     响应模型和评测脚本，扁平结构最好接。
     """
+    # memory 是第 11 步的模块，延迟到用它的地方再导入（原因见文件顶部注释）
+    from .memory import get_session
+
     t0 = time.perf_counter()
     session = get_session(session_id)
 
@@ -156,6 +205,9 @@ async def run_stream(question: str, session_id: str = "default"):
     和 run_pipeline 的区别只有最后一步 —— 不是等答案攒齐再返回，
     而是拿到一段就 yield 一段，前端才能做出「打字机」效果。
     """
+    # memory 是第 11 步的模块，延迟到用它的地方再导入（原因见文件顶部注释）
+    from .memory import get_session
+
     session = get_session(session_id)
     hits = await retriever.retrieve(question, use_hybrid=True)
     context, _ = _build_context(hits)
