@@ -1,6 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # 项目根目录（app/ 的上一级）
@@ -66,10 +67,18 @@ class Settings(BaseSettings):
 
     # --- 可选：Langfuse 追踪（第 12 步 ⑥）---
     # 三个都填了才会启用；任一为空 → app/tracing.py 里全部是空操作。
-    # 免费注册：https://cloud.langfuse.com（自建也一样，改 HOST 即可）
+    # 免费注册：https://cloud.langfuse.com（自建/其他机房也一样，改 HOST 即可）
     langfuse_public_key: str = ""    # LANGFUSE_PUBLIC_KEY，形如 pk-lf-...
     langfuse_secret_key: str = ""    # LANGFUSE_SECRET_KEY，形如 sk-lf-...
-    langfuse_host: str = "https://cloud.langfuse.com"
+    # 主机地址：官方环境变量名是 LANGFUSE_HOST，但官方文档/控制台里也常出现
+    # LANGFUSE_BASE_URL（自建与部分区域机房给的就是这个）。**两个都认**，
+    # 免得「明明填了却连不上、还看不出来」。
+    langfuse_host: str = Field(
+        default="https://cloud.langfuse.com",
+        validation_alias=AliasChoices(
+            "LANGFUSE_HOST", "LANGFUSE_BASE_URL", "langfuse_host", "langfuse_base_url"
+        ),
+    )
 
     # --- 可选 Redis（第 13 步用）---
     redis_url: str = "redis://127.0.0.1:6379/0"

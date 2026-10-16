@@ -6,14 +6,19 @@
 3. 压缩策略：超过窗口就滚动摘要（把旧对话压成一段要点），保住关键信息。
 
 骨架里用内存字典实现，重启即失效；
-生产环境把 _sessions 换成 Redis，重启后会话还在（第 14 步做）。
+第 13 步 ③ 把它外置到了 Redis（`aget_session` / `asave_session` / `aclear_session`），
+内存只当一级缓存 —— 重启服务、多副本部署都能续上同一个会话。
 """
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 
+from . import cache
 from .config import settings
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -84,6 +89,10 @@ _sessions: dict[str, Session] = {}
 
 
 def get_session(session_id: str) -> Session:
+    """内存版取会话。**同步**接口，保持向后兼容（工具、测试里还能直接用）。
+
+    需要「重启后还记得」的场景请用 `aget_session()` —— 它会去 Redis 捞。
+    """
     if session_id not in _sessions:
         _sessions[session_id] = Session(session_id=session_id)
     return _sessions[session_id]
@@ -91,6 +100,59 @@ def get_session(session_id: str) -> Session:
 
 def clear_session(session_id: str) -> bool:
     return _sessions.pop(session_id, None) is not None
+
+
+# ---------------- 会话状态外置到 Redis（第 13 步 ③）----------------
+# 为什么必须做：内存版 `_sessions` 有三个致命问题 ——
+#   ① 重启即丢（用户问「刚才我们聊到哪了？」直接断片）；
+#   ② 多进程/多副本部署时，同一个 session 的请求可能落到不同进程 → 各记各的；
+#   ③ 内存无上限，会话多了会一直涨。
+# 做法：内存只当「一级缓存」，真正的存储在 Redis。
+
+
+def _to_dict(session: Session) -> dict:
+    return {
+        "session_id": session.session_id,
+        "summary": session.summary,
+        "turns": [{"role": t.role, "content": t.content} for t in session.turns],
+    }
+
+
+def _from_dict(data: dict) -> Session:
+    return Session(
+        session_id=data["session_id"],
+        summary=data.get("summary", ""),
+        turns=[Turn(role=t["role"], content=t["content"]) for t in data.get("turns", [])],
+    )
+
+
+async def aget_session(session_id: str) -> Session:
+    """三级查找：内存 → Redis → 新建一个空的。"""
+    if session_id in _sessions:
+        return _sessions[session_id]
+
+    data = await cache.load_session(session_id)
+    if data:
+        session = _from_dict(data)
+        logger.info("会话 %s 从 Redis 恢复，%d 轮", session_id, len(session.turns))
+    else:
+        session = Session(session_id=session_id)
+
+    _sessions[session_id] = session
+    return session
+
+
+async def asave_session(session: Session) -> None:
+    """写回：内存 + Redis 各一份。"""
+    _sessions[session.session_id] = session
+    await cache.save_session(session.session_id, _to_dict(session))
+
+
+async def aclear_session(session_id: str) -> bool:
+    """清空会话：内存和 Redis 都要清，否则下次又被 Redis 捞回来。"""
+    in_memory = _sessions.pop(session_id, None) is not None
+    removed = await cache.delete_session(session_id)
+    return in_memory or removed > 0
 
 
 def stats() -> dict:

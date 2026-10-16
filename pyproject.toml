@@ -27,6 +27,7 @@ graph  = ["langgraph>=0.0.40", "grandalf>=0.8"]   # Agent 编排（grandalf 供 
 eval   = ["ragas>=0.1.5"]            # 评测
 trace  = ["langfuse>=3.0"]           # 调用链追踪（第 12 步 ⑥）
 cache  = ["redis>=5.0"]              # 缓存
+dev    = ["pytest>=8.0", "fakeredis>=2.20"]   # 本地测试（fakeredis：不装 Redis 也能测缓存/限流）
 all    = ["pypdf>=4.0", "rank-bm25>=0.2.2", "chromadb>=0.4.24",
           "langgraph>=0.0.40", "langchain-core>=0.1.40", "grandalf>=0.8",
           "langfuse>=3.0", "redis>=5.0"]

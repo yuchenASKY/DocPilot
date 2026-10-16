@@ -1,0 +1,38 @@
+# 构建上下文排除清单（第 13 步 ④ 的配套文件，文档里漏了）
+#
+# 为什么必须有它：`docker build` 会先把**整个上下文目录**发给 Docker 守护进程。
+# 项目根下有 `.venv/`（几百 MB）、`.git/`、`.data/` 这些，不排除的话
+# 每次构建都要传几百 MB —— 构建慢十倍，而且 `.env` 里的 Key 会被打进镜像层（危险）。
+
+# ---- 密钥：绝对不能进镜像 ----
+# 运行时用 `docker compose` 的 env_file 传进去，不存在于镜像里
+.env
+
+# ---- 版本控制与编辑器 ----
+.git
+.gitignore
+.idea/
+.vscode/
+
+# ---- 本地虚拟环境与各类缓存 ----
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+docpilot.egg-info/
+
+# ---- 评测产物与临时文件 ----
+eval/report_latest.json
+eval/report_latest.md
+*.log
+
+# ---- 笔记（不影响运行）----
+NOTES.md
+
+# ⚠️⚠️ 千万不要在这里排除 `.data/`！
+#     Dockerfile 里有一行 `COPY .data ./.data` —— 它把**已经建好的向量索引**
+#     一起打进镜像（那是在本地花钱建的，3409 个片段）。
+#     一旦把 .data 排除掉，构建**不会报错**、容器也照常启动、/health 也返回 ok，
+#     但检索永远返回 0 条、所有问题都被判成「知识库里没有」——
+#     这是最隐蔽的一类故障，排查方向会完全跑偏。

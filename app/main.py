@@ -23,7 +23,8 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
-from . import graph, ingest, memory, tools, tracing
+from . import cache, graph, ingest, memory, tools, tracing
+from .cache import rate_limit
 from .config import settings
 from .embedding import embedder
 from .llm import llm_client
@@ -43,6 +44,7 @@ async def lifespan(app: FastAPI):
     yield
     await llm_client.aclose()
     await embedder.aclose()
+    await cache.close_redis()          # 第 13 步 ①：断开 Redis 连接
     # ★ 追踪的 span 是「批量上报」的，进程退出前必须 flush，否则缓冲区里的会丢
     tracing.flush()
     tracing.shutdown()
@@ -81,6 +83,17 @@ async def health() -> HealthResponse:
 
 @app.post("/chat", response_model=ChatResponse, tags=["对话"])
 async def chat(req: ChatRequest) -> ChatResponse:
+    # 第 13 步 ②：按 session 限流，60 秒内最多 20 次。
+    # ★ 位置必须在这里 —— 在 run_pipeline() **之前**。
+    #   限流的意义是拦住超额请求；如果先做完了检索和生成再检查，
+    #   钱已经花掉了（embeddings + LLM 都算过了）。
+    if not await rate_limit(f"chat:{req.session_id}", limit=20, window=60):
+        raise HTTPException(
+            status_code=429,
+            detail="请求过于频繁，请稍后再试",
+            headers={"Retry-After": "60"},
+        )
+
     result = await graph.run_pipeline(
         req.question,
         session_id=req.session_id,
@@ -104,6 +117,12 @@ async def chat_stream(req: ChatRequest):
 
     async def event_gen():
         yield f"event: meta\ndata: {json.dumps({'session_id': req.session_id}, ensure_ascii=False)}\n\n"
+        # 流式这条也限流：不拦的话「打字机效果」正好绕过了限流（一样要钱）
+        if not await rate_limit(f"chat:{req.session_id}", limit=20, window=60):
+            err = json.dumps({"error": "请求过于频繁，请稍后再试"}, ensure_ascii=False)
+            yield f"event: error\ndata: {err}\n\n"
+            yield "event: done\ndata: [DONE]\n\n"
+            return
         try:
             async for piece in graph.run_stream(req.question, req.session_id):
                 payload = json.dumps({"delta": piece}, ensure_ascii=False)
@@ -149,6 +168,9 @@ async def upload(file: UploadFile = File(...)) -> UploadResponse:
 
     vectorstore.store.add(chunks, vectors)
     vectorstore.store.save()
+    # ★ 第 13 步纪律：索引一变，检索结果缓存立刻作废。
+    #   不清的话，用户会拿到「新文档入索引之前」的答案，而且完全不报错 —— 最难查的那类 bug。
+    await cache.clear_retrieval_cache()
 
     return UploadResponse(
         filename=file.filename, saved_to=str(dest), chunks=len(chunks), indexed=True
@@ -157,7 +179,8 @@ async def upload(file: UploadFile = File(...)) -> UploadResponse:
 
 @app.post("/session/{session_id}/clear", tags=["对话"])
 async def clear_session(session_id: str) -> dict:
-    ok = memory.clear_session(session_id)
+    # 第 13 步 ③：内存和 Redis 都要清，否则下次会被 Redis 捞回来
+    ok = await memory.aclear_session(session_id)
     return {"cleared": ok, "session_id": session_id}
 
 
@@ -172,5 +195,11 @@ async def stats() -> dict:
         "llm_enabled": llm_client.enabled,
         "embed_mode": embedder.mode,
         "tracing": tracing.enabled(),
+        # 第 13 步 ①：use_redis 是「配置里写着开」，connected 才是「真的通」
+        # —— 两者不一致就是「缓存和限流静默失效」的状态，必须能一眼看出来
+        "cache": {
+            "use_redis": settings.use_redis,
+            "connected": await cache.ping(),
+        },
         "server_time": time.strftime("%Y-%m-%d %H:%M:%S"),
     }

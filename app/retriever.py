@@ -8,10 +8,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 import httpx
 
+from . import cache
 from . import tracing
 from . import vectorstore as vs_mod
 from .config import settings
@@ -129,8 +130,18 @@ async def retrieve(
     if len(store) == 0:
         return []
 
-    # 1) 向量检索
-    q_vec = await embedder.embed_one(query)
+    # 0) 检索结果缓存（第 13 步 ①）
+    #    ★ 缓存 key 必须把**所有影响结果的开关**都编进去（top_k / 混合 / 重排），
+    #      否则「开了 rerank 的答案」会被「没开的请求」读到 —— 这类 bug 很隐蔽。
+    #    ★ 索引一变就要清（`build_index --rebuild`、`/upload` 里都会调
+    #      `cache.clear_retrieval_cache()`），否则用户拿到的是旧文档的答案。
+    cache_key = cache._key("retr", f"{query}|{k}|{use_hybrid}|{use_rerank}")
+    cached = await cache.get_json(cache_key)
+    if cached is not None:
+        return [Retrieved(**d) for d in cached]
+
+    # 1) 向量检索（query 的向量走缓存：同一句话不重复花钱）
+    q_vec = await cache.embed_cached(query)
     vec_hits = store.search(q_vec, top_k=k * 3)
     vec_map = {m["chunk_id"]: (m, s) for m, s in vec_hits}
     vec_ranking = [m["chunk_id"] for m, _ in vec_hits]
@@ -186,7 +197,10 @@ async def retrieve(
     if use_rerank:
         results = await _rerank(query, results, k)
 
-    return results[:k]
+    final = results[:k]
+    # 写检索结果缓存（含「空结果」—— 库外问题的重复提问也能直接短路）
+    await cache.set_json(cache_key, [asdict(r) for r in final], cache.RETRIEVAL_TTL)
+    return final
 
 
 # 出现这些词，才说明「这句话里有个指代，单看它没法检索」

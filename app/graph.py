@@ -142,10 +142,11 @@ async def run_pipeline(
     响应模型和评测脚本，扁平结构最好接。
     """
     # memory 是第 11 步的模块，延迟到用它的地方再导入（原因见文件顶部注释）
-    from .memory import get_session
+    # 第 13 步 ③ 起改用 async 版：内存里没有就去 Redis 捞（重启后也能续上上下文）
+    from .memory import aget_session, asave_session
 
     t0 = time.perf_counter()
-    session = get_session(session_id)
+    session = await aget_session(session_id)
 
     # ★ Session 里存历史用的字段是 turns，而且元素是 Turn 对象（dataclass）；
     #   而 rewrite_query(question, history) 要的是 [{"role":..., "content":...}] 这种
@@ -216,6 +217,9 @@ async def run_pipeline(
     # 4) 写回记忆（下一轮才有上下文）
     session.add("user", question)
     session.add("assistant", answer)
+    # 第 13 步 ③：落一次 Redis。内存那份已经同步了（asave_session 里赋值），
+    # 但**不落盘的话重启就丢** —— 那正是「会话外置」要解决的第一个问题。
+    await asave_session(session)
 
     return {
         "session_id": session_id,
@@ -236,9 +240,9 @@ async def run_stream(question: str, session_id: str = "default"):
     而是拿到一段就 yield 一段，前端才能做出「打字机」效果。
     """
     # memory 是第 11 步的模块，延迟到用它的地方再导入（原因见文件顶部注释）
-    from .memory import get_session
+    from .memory import aget_session, asave_session
 
-    session = get_session(session_id)
+    session = await aget_session(session_id)
     hits = await retriever.retrieve(question, use_hybrid=True)
     context, _ = _build_context(hits)
 
@@ -253,3 +257,4 @@ async def run_stream(question: str, session_id: str = "default"):
 
     session.add("user", question)
     session.add("assistant", "".join(buf))
+    await asave_session(session)      # 第 13 步 ③：流式这条也要落 Redis

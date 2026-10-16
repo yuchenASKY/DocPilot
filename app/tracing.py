@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any, Callable
 
 from .config import settings
@@ -27,6 +28,30 @@ logger = logging.getLogger(__name__)
 # langfuse 的入口函数；没配 Key 或没装包时保持 None —— 全模块靠它判断「要不要干活」
 _OBSERVE: Callable | None = None
 _CLIENT_FACTORY: Callable | None = None
+
+
+def _push_env() -> None:
+    """把 `.env` 里读到的 Langfuse 配置**写回进程环境变量**。
+
+    ★ 这一步必须做，而且极容易漏 —— 漏了就是「配了等于没配」：
+      `pydantic-settings` 只是把 `.env` **读进 Settings 对象**，
+      它**不会**把值导出到 `os.environ`。而 langfuse 的 SDK 是从
+      **进程环境变量**取凭据的（`LANGFUSE_PUBLIC_KEY` 等）。
+      于是现象是：`settings.langfuse_enabled` 是 `True`（配置确实读到了）、
+      每个 `@observe` 装饰器也包上了，但 SDK 客户端因为「没有 public_key」
+      被**静默禁用** —— 面板上一条 trace 都没有，只在初始化时打一行 warning。
+
+      本机实测（2026-10-16）：修之前 `get_client().auth_check()` → `False`
+      + 「Authentication error: ... Client will be disabled」；修之后 → `True`。
+
+    用 `setdefault` 而不是直接赋值：真实环境变量（CI / docker -e）优先级更高，
+    应该盖过 `.env`。
+    """
+    os.environ.setdefault("LANGFUSE_PUBLIC_KEY", settings.langfuse_public_key)
+    os.environ.setdefault("LANGFUSE_SECRET_KEY", settings.langfuse_secret_key)
+    # 两个名字都写：不同版本的 SDK / 不同机房拿到的是不同的那个
+    os.environ.setdefault("LANGFUSE_HOST", settings.langfuse_host)
+    os.environ.setdefault("LANGFUSE_BASE_URL", settings.langfuse_host)
 
 
 def _load() -> None:
@@ -45,6 +70,7 @@ def _load() -> None:
 
 
 if settings.langfuse_enabled:
+    _push_env()
     _load()
 
 

@@ -1,0 +1,66 @@
+# 一键起「应用 + Redis」（第 13 步 ⑤）
+#
+#     docker compose -f deploy/docker-compose.yml up -d --build     # 起
+#     docker compose -f deploy/docker-compose.yml ps                # 看状态
+#     docker compose -f deploy/docker-compose.yml logs -f app       # 看日志
+#     docker compose -f deploy/docker-compose.yml down              # 停（加 -v 连卷一起删）
+#
+# 说明：`-f deploy/docker-compose.yml` 里的相对路径都以**这个文件所在目录**为基准，
+# 所以下面写的是 `..`（项目根）。
+
+services:
+  # ---------------- Redis（缓存 + 限流 + 会话状态）----------------
+  redis:
+    image: redis:7-alpine
+    container_name: docpilot-redis
+    # appendonly：开 AOF 持久化。默认 Redis 只在内存里，重启就把会话/缓存丢了 ——
+    # 那第 13 步 ③ 做的「会话外置」就白做了。
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      # 映射出来是为了「本机直接跑 uvicorn、只把 Redis 放容器里」这种调试姿势。
+      # 纯容器内部通信不需要它（容器之间用服务名 redis:6379 直连）。
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # ---------------- 应用 ----------------
+  app:
+    build:
+      context: ..                       # 构建上下文 = 项目根（Dockerfile 要 COPY app/ data/ .data）
+      dockerfile: deploy/Dockerfile
+    container_name: docpilot-app
+    # 直接复用本地那份 .env（DeepSeek / 百炼 的 Key 都在里面）。
+    # ★ 用 env_file 而不是把 Key 写进 Dockerfile/镜像 —— 镜像会被推到仓库，
+    #   写进去等于把 Key 公开了。这也是 .dockerignore 里要把 .env 排除掉的原因。
+    env_file:
+      - ../.env
+    environment:
+      # ★★ 容器里必须用**服务名** redis 而不是 localhost。
+      #    每个容器有自己的网络命名空间，容器里的 localhost 是它自己，
+      #    不是宿主机、也不是 Redis 容器 —— 这是 Docker 最经典的坑。
+      #    这行会**覆盖** .env 里的 REDIS_URL（environment 优先级高于 env_file）。
+      REDIS_URL: redis://redis:6379/0
+      USE_REDIS: "true"
+    ports:
+      - "8000:8000"
+    volumes:
+      # 把索引/上传文件放到命名卷里，`up -d --build` 重建容器时不会丢。
+      # 首次启动时这个卷会用镜像里 COPY 进去的 .data 内容初始化（见 Dockerfile 注释）。
+      - app-data:/app/.data
+    depends_on:
+      redis:
+        # 等 Redis 真的 healthy 再起应用。
+        # 只写 `depends_on: [redis]` 是**只等容器启动**、不等它就绪 ——
+        # 这时应用连 Redis 会失败（虽然我们做了 fail-open，不至于崩，但会白等超时）。
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  app-data:

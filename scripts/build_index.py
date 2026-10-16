@@ -14,7 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app import ingest, vectorstore  # noqa: E402
+from app import cache, ingest, vectorstore  # noqa: E402
 from app.config import settings  # noqa: E402
 from app.embedding import embedder  # noqa: E402
 
@@ -60,7 +60,15 @@ async def main() -> None:
     vectorstore.store.save()
     print(f"\n[OK] 本次入库 {total} 个片段，库中共 {len(vectorstore.store)} 个")
     print(f"     索引位置：{settings.vector_dir}")
+
+    # ★ 第 13 步纪律：索引变了，检索结果缓存必须作废。
+    #   不清的话，用户会继续拿到「重建之前」的答案，而且这个 bug 不报错、极难发现。
+    cleared = await cache.clear_retrieval_cache()
+    if cleared:
+        print(f"     已清理检索结果缓存 {cleared} 个 key")
+
     await embedder.aclose()
+    await cache.close_redis()
 
 
 if __name__ == "__main__":
