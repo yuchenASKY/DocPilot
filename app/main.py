@@ -1,28 +1,39 @@
 """FastAPI 入口：把能力暴露成 HTTP 接口。
 
-第 11 步完成后的样子 —— 已经能跨轮次记忆：
-  GET  /health                    健康检查
-  POST /chat                      一问一答
-  POST /chat/stream               SSE 流式输出（打字机效果）
-  POST /session/{id}/clear        清空某个会话的记忆
+四个核心接口（第 4 步的验收标准就是这四个都能通）：
+  GET  /health         健康检查——部署后用来判断服务活没活
+  POST /chat           一问一答
+  POST /chat/stream    SSE 流式输出（打字机效果）
+  POST /upload         上传文档 → 自动解析切块入库
 
-后面还会继续补：
-  第 12 步 → /stats、/upload
+另外附赠：
+  POST /session/{id}/clear  清空某个会话的记忆
+  GET  /stats               看当前索引了多少片段、活跃会话数
 """
 
 from __future__ import annotations
 
 import json
+import shutil
+import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
-from . import graph, memory
+from . import graph, ingest, memory, tools, tracing
+from .config import settings
 from .embedding import embedder
 from .llm import llm_client
-from .schemas import ChatRequest, ChatResponse, HealthResponse, SourceChunk
+from .schemas import (
+    ChatRequest,
+    ChatResponse,
+    HealthResponse,
+    SourceChunk,
+    UploadResponse,
+)
 
 
 @asynccontextmanager
@@ -32,6 +43,9 @@ async def lifespan(app: FastAPI):
     yield
     await llm_client.aclose()
     await embedder.aclose()
+    # ★ 追踪的 span 是「批量上报」的，进程退出前必须 flush，否则缓冲区里的会丢
+    tracing.flush()
+    tracing.shutdown()
 
 
 app = FastAPI(
@@ -106,7 +120,57 @@ async def chat_stream(req: ChatRequest):
     )
 
 
+@app.post("/upload", response_model=UploadResponse, tags=["文档"])
+async def upload(file: UploadFile = File(...)) -> UploadResponse:
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="文件名为空")
+
+    suffix = Path(file.filename).suffix.lower()
+    if suffix not in {".pdf", ".md", ".markdown", ".txt"}:
+        raise HTTPException(status_code=400, detail=f"不支持的类型：{suffix}")
+
+    dest = settings.upload_dir / file.filename
+    with dest.open("wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    try:
+        chunks = ingest.build_chunks(dest)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"解析失败：{exc}") from exc
+
+    if not chunks:
+        return UploadResponse(
+            filename=file.filename, saved_to=str(dest), chunks=0, indexed=False
+        )
+
+    vectors = await embedder.embed([c.text for c in chunks])
+
+    from . import vectorstore
+
+    vectorstore.store.add(chunks, vectors)
+    vectorstore.store.save()
+
+    return UploadResponse(
+        filename=file.filename, saved_to=str(dest), chunks=len(chunks), indexed=True
+    )
+
+
 @app.post("/session/{session_id}/clear", tags=["对话"])
 async def clear_session(session_id: str) -> dict:
     ok = memory.clear_session(session_id)
     return {"cleared": ok, "session_id": session_id}
+
+
+@app.get("/stats", tags=["系统"])
+async def stats() -> dict:
+    from . import vectorstore
+
+    return {
+        "indexed_chunks": len(vectorstore.store),
+        "tools": list(tools.TOOLS),
+        "memory": memory.stats(),
+        "llm_enabled": llm_client.enabled,
+        "embed_mode": embedder.mode,
+        "tracing": tracing.enabled(),
+        "server_time": time.strftime("%Y-%m-%d %H:%M:%S"),
+    }

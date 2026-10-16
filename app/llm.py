@@ -18,6 +18,7 @@ from collections.abc import AsyncIterator
 
 import httpx
 
+from . import tracing
 from .config import settings
 
 # 离线降级回答：没有 API Key 时用它，保证工程链路能跑通
@@ -61,6 +62,8 @@ class LLMClient:
         return self._client
 
     # ---------- 非流式 ----------
+    # as_type="generation" 让这次调用在追踪面板上按「模型调用」呈现（能挂 token 用量）
+    @tracing.observe(name="llm.chat", as_type="generation")
     async def chat(
         self,
         messages: list[dict],
@@ -88,13 +91,24 @@ class LLMClient:
         resp.raise_for_status()
         data = resp.json()
         msg = data["choices"][0]["message"]
+        usage = data.get("usage", {})
+        # 把 token 用量挂到这次 generation 上 —— 面板里就能直接看到「这一步花了多少 token」
+        tracing.update_generation(
+            model=settings.llm_model,
+            usage_details={
+                "input": usage.get("prompt_tokens", 0),
+                "output": usage.get("completion_tokens", 0),
+                "total": usage.get("total_tokens", 0),
+            },
+        )
         return {
             "content": msg.get("content") or "",
             "tool_calls": msg.get("tool_calls") or [],
-            "usage": data.get("usage", {}),
+            "usage": usage,
         }
 
     # ---------- 流式 ----------
+    @tracing.observe(name="llm.chat_stream", as_type="generation")
     async def chat_stream(self, messages: list[dict]) -> AsyncIterator[str]:
         """逐段产出增量文本，配合 FastAPI 的 StreamingResponse 做 SSE。"""
         if not self.enabled:

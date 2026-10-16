@@ -1,0 +1,457 @@
+{
+  "total": 40,
+  "hit_rate": 0.95,
+  "avg_latency_ms": 4022.7,
+  "embed_mode": 1024,
+  "details": [
+    {
+      "question": "文本切块有哪些策略？",
+      "expected_source": "chunking-csCL_QChunker-Learning-Question-Aware-Text-Chunking-for-D_2603.11650v1.pdf",
+      "got_sources": [
+        "chunking-csCL_QChunker-Learning-Question-Aware-Text-Chunking-for-D_2603.11650v1.pdf",
+        "rag-csIR_The-Effect-of-Text-Chunk-Size-on-Retrieval-Augmented_2607.24767v1.md"
+      ],
+      "hit": true,
+      "latency_ms": 13088,
+      "answer_preview": "## 结论\n\n根据参考资料，文本切块策略大致可以分为以下几类：**启发式/结构切分**、**语义切分**，以及按**粒度层级**划分的切分方式（章节、段落、句子等）。此外还有按固定长度切分、兼顾句子完整性的切分等具体实现。\n\n## 依据\n\n",
+      "error": ""
+    },
+    {
+      "question": "文本块的大小会怎么影响 RAG 的效果？",
+      "expected_source": "rag-csIR_The-Effect-of-Text-Chunk-Size-on-Retrieval-Augmented_2607.24767v1.md",
+      "got_sources": [
+        "rag-csIR_The-Effect-of-Text-Chunk-Size-on-Retrieval-Augmented_2607.24767v1.md"
+      ],
+      "hit": true,
+      "latency_ms": 4622,
+      "answer_preview": "## 结论\n\n根据这篇论文，文本块（chunk）大小对 RAG 的检索和生成效果都有明显影响，但**不存在一个在所有场景下都最优的固定块大小**——最优块大小取决于文本本身的结构 [4]。\n\n## 依据\n\n**1. 块大小确实会影响效果，但",
+      "error": ""
+    },
+    {
+      "question": "用大模型做查询改写一般怎么做？",
+      "expected_source": "query-rw-csDB_ReSequel-Robust-LLM-assisted-Query-Rewriting-and-Opt_2606.20853v2.pdf",
+      "got_sources": [
+        "conv-csIR_Conversational-Search-From-Fundamentals-to-Frontiers_2506.10635v1.txt",
+        "query-rw-csDB_ReSequel-Robust-LLM-assisted-Query-Rewriting-and-Opt_2606.20853v2.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 3647,
+      "answer_preview": "## 结论\n\n根据参考资料，用大模型（LLM）做查询改写主要有两种思路：**纯 LLM 直接改写**，以及**把 LLM 作为外层优化层、配合验证与排序的改写**。前者存在明显局限，后者是文档重点提出的改进方向。\n\n## 依据\n\n**1. ",
+      "error": ""
+    },
+    {
+      "question": "语义缓存是怎么判断命中的？",
+      "expected_source": "sem-cache-csAI_LaCache-Robust-Semantic-Caching-for-LLM-Serving_2608.01718v1.md",
+      "got_sources": [
+        "sem-cache-csAI_LaCache-Robust-Semantic-Caching-for-LLM-Serving_2608.01718v1.md"
+      ],
+      "hit": true,
+      "latency_ms": 4056,
+      "answer_preview": "## 结论\n\n语义缓存判断命中，靠的是**缓存键（cache key）h(x) 的匹配**，而不是直接比较原始文本。具体来说，系统对每个到来的查询 x 计算其缓存键 h(x)，然后在语义缓存中查找是否存在相同键的缓存项；如果找到，就认为命中",
+      "error": ""
+    },
+    {
+      "question": "怎么检测大语言模型的幻觉？",
+      "expected_source": "faithful-csAI_Automatic-Layer-Selection-for-Hallucination-Detectio_2605.26366v3.txt",
+      "got_sources": [
+        "faithful-csAI_Automatic-Layer-Selection-for-Hallucination-Detectio_2605.26366v3.txt"
+      ],
+      "hit": true,
+      "latency_ms": 3253,
+      "answer_preview": "## 结论\n\n根据参考资料，文档中提到的幻觉检测方法是在**隐状态探测（hidden-state probing）框架**下进行的：保持预训练 LLM 冻结，在从选定层提取的表示上训练一个轻量级多层感知机（MLP）来做幻觉检测 [5]。文档",
+      "error": ""
+    },
+    {
+      "question": "RAG 系统应该用什么指标来评测？",
+      "expected_source": "rag-eval-csAI_Towards-Query-Agnostic-RAG-Evaluation-via-Query-Cove_2608.11238v3.pdf",
+      "got_sources": [
+        "rag-eval-csAI_Towards-Query-Agnostic-RAG-Evaluation-via-Query-Cove_2608.11238v3.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 5058,
+      "answer_preview": "# 结论\n\n根据参考资料，RAG 评测指标并没有唯一答案，取决于你选用的评测框架。文档中对比了五种方法（ARES、RAGAs、RAGEval、RAGChecker、DoRAG）以及作者提出的 Q-CARE，它们各自使用的指标不同 [1][3",
+      "error": ""
+    },
+    {
+      "question": "重排阶段是怎么给候选句子打分的？",
+      "expected_source": "rerank-csIR_Local-to-Global-Sentence-Level-Graph-Reranking-for-S_2608.30525v2.txt",
+      "got_sources": [
+        "rerank-csIR_Local-to-Global-Sentence-Level-Graph-Reranking-for-S_2608.30525v2.txt"
+      ],
+      "hit": true,
+      "latency_ms": 4339,
+      "answer_preview": "重排阶段对候选句子的打分方式是：学习一个打分函数 fθ，为统一句子候选集中的每个句子 s 赋予一个相关性分数 zs = fθ(q, s; Sq)，其中 q 是查询，Sq 是所有检索段落拆解后得到的统一句子候选集 [1][2]。\n\n具体流程如",
+      "error": ""
+    },
+    {
+      "question": "近似最近邻检索在高维空间会遇到什么困难？",
+      "expected_source": "ann-csDS_Approximate-Nearest-Neighbor-in-Ultra-High-Dimension_2609.09427v1.pdf",
+      "got_sources": [
+        "ann-csDS_Approximate-Nearest-Neighbor-in-Ultra-High-Dimension_2609.09427v1.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 3454,
+      "answer_preview": "**结论：在高维空间中，近似最近邻（ANN）检索会遇到\"维度灾难\"（curse of dimensionality），使得低维场景下有效的算法失效。**\n\n依据如下：\n\n1. **高维区间的定义与困难**：当维度满足 ω(log n) ≤ ",
+      "error": ""
+    },
+    {
+      "question": "稠密检索为什么要引入路由策略？",
+      "expected_source": "dense-retr-csIR_Towards-Dynamic-Dense-Retrieval-with-Routing-Strateg_2602.22547v1.pdf",
+      "got_sources": [
+        "dense-retr-csIR_Towards-Dynamic-Dense-Retrieval-with-Routing-Strateg_2602.22547v1.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 3068,
+      "answer_preview": "## 结论\n\n根据文档，稠密检索引入路由策略的核心目的是：**让稠密检索系统能够动态地适应新任务，同时大幅降低训练参数开销**。具体来说，DDR（Dynamic Dense Retrieval）通过细粒度路由策略在检索时动态激活前缀向量（p",
+      "error": ""
+    },
+    {
+      "question": "提示压缩会不会损失效果？",
+      "expected_source": "ctx-comp-csCL_Prompt-Compression-in-Diffusion-Large-Language-Model_2605.17932v2.pdf",
+      "got_sources": [
+        "ctx-comp-csCL_Prompt-Compression-in-Diffusion-Large-Language-Model_2605.17932v2.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 4095,
+      "answer_preview": "**结论：会。** 提示压缩会损失效果，但损失程度因任务类型和评估指标而异——语义层面的信息大体能保留，但下游推理表现并不稳定，尤其是数学推理对压缩特别敏感。\n\n**依据如下：**\n\n1. **压缩确实会显著拉低准确率。** 在 250 个",
+      "error": ""
+    },
+    {
+      "question": "QChunker 是怎么做文本切块的？",
+      "expected_source": "chunking-csCL_QChunker-Learning-Question-Aware-Text-Chunking-for-D_2603.11650v1.pdf",
+      "got_sources": [
+        "chunking-csCL_QChunker-Learning-Question-Aware-Text-Chunking-for-D_2603.11650v1.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 3186,
+      "answer_preview": "## 结论\n\n根据文档，QChunker 的文本切块流程大致是：**利用文档大纲（document outline）进行多路径采样，生成多个候选切块方案，再用 ChunkScore 作为裁决者自动选出最优方案**，并在此基础上训练小语言模型",
+      "error": ""
+    },
+    {
+      "question": "ReSequel 是怎么做查询改写的？",
+      "expected_source": "query-rw-csDB_ReSequel-Robust-LLM-assisted-Query-Rewriting-and-Opt_2606.20853v2.pdf",
+      "got_sources": [
+        "query-rw-csDB_ReSequel-Robust-LLM-assisted-Query-Rewriting-and-Opt_2606.20853v2.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 4205,
+      "answer_preview": "## 结论\n\nReSequel 是一个构建在现有 DBMS 之上的**外层优化层（outer optimization layer）**，它借助 LLM 对 SQL 查询进行改写，并通过本地验证、缓存复用等机制选出最优的改写结果 [4][2",
+      "error": ""
+    },
+    {
+      "question": "LaCache 是怎么实现语义缓存的？",
+      "expected_source": "sem-cache-csAI_LaCache-Robust-Semantic-Caching-for-LLM-Serving_2608.01718v1.md",
+      "got_sources": [
+        "sem-cache-csAI_LaCache-Robust-Semantic-Caching-for-LLM-Serving_2608.01718v1.md"
+      ],
+      "hit": true,
+      "latency_ms": 3949,
+      "answer_preview": "## 结论\n\nLaCache 是一种对语义缓存的「轻量级重构」，其核心思路是**把完整性校验从 query 转移到 response**：不再只根据 query 建立索引，而是在缓存条目中额外加入一个由**响应前 k 个 token 派生的",
+      "error": ""
+    },
+    {
+      "question": "Q-CARE 用什么指标来评测 RAG？",
+      "expected_source": "rag-eval-csAI_Towards-Query-Agnostic-RAG-Evaluation-via-Query-Cove_2608.11238v3.pdf",
+      "got_sources": [
+        "rag-eval-csAI_Towards-Query-Agnostic-RAG-Evaluation-via-Query-Cove_2608.11238v3.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 3506,
+      "answer_preview": "## 结论\n\nQ-CARE 从**检索**和**生成**两个层面进行评测，核心是把查询覆盖（query coverage）和声明可验证性（claim verifiability）量化到原子级别，再聚合成检索指标和生成指标 [5]。\n\n具体来",
+      "error": ""
+    },
+    {
+      "question": "RT-DocLayout 的实时性是怎么量化的？",
+      "expected_source": "doc-parse-csCV_RT-DocLayout-Real-Time-End-to-End-Document-Layout-An_2606.23344v1.md",
+      "got_sources": [
+        "doc-parse-csCV_RT-DocLayout-Real-Time-End-to-End-Document-Layout-An_2606.23344v1.md"
+      ],
+      "hit": true,
+      "latency_ms": 2947,
+      "answer_preview": "**结论：RT-DocLayout 的实时性用推理速度 FPS（images/second，每秒处理图像数）来量化，其数值为 132.1 FPS。**\n\n依据如下：\n\n1. **量化指标是 FPS。** 文档在对比性能时，明确将「推理速度（",
+      "error": ""
+    },
+    {
+      "question": "SimpleTool 是怎么加速函数调用的？",
+      "expected_source": "tool-call-csCL_SimpleTool-Parallel-Decoding-for-Real-Time-LLM-Funct_2603.00030v1.pdf",
+      "got_sources": [
+        "tool-call-csCL_SimpleTool-Parallel-Decoding-for-Real-Time-LLM-Funct_2603.00030v1.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 5295,
+      "answer_preview": "## 结论\n\nSimpleTool 通过**并行解码（Parallel Decoding）**来加速函数调用，核心思路是利用函数调用输出的两个特性——**结构化输出存在大量 token 冗余**（分隔符、参数名等）以及**参数之间因果依赖很",
+      "error": ""
+    },
+    {
+      "question": "STAR 检索器是怎么利用知识图谱的？",
+      "expected_source": "graphrag-csIR_STAR-Semantic-Tuned-and-Tail-Adaptive-Retriever-for_2605.18765v1.pdf",
+      "got_sources": [
+        "graphrag-csIR_STAR-Semantic-Tuned-and-Tail-Adaptive-Retriever-for_2605.18765v1.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 3495,
+      "answer_preview": "## 结论\n\nSTAR 检索器在推理阶段通过 **beam search（束搜索）** 在知识图谱（KG）上进行路径检索，把训练好的 STAR 模型当作**打分引擎**来引导搜索过程 [1]。搜索从输入查询的**主题实体（topic ent",
+      "error": ""
+    },
+    {
+      "question": "自对比引导是怎么改善文本表示的？",
+      "expected_source": "embedding-csCL_Focusing-Condition-Inference-Time-Self-Contrastive-S_2609.32684v1.pdf",
+      "got_sources": [
+        "embedding-csCL_Focusing-Condition-Inference-Time-Self-Contrastive-S_2609.32684v1.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 3417,
+      "answer_preview": "**结论：** 自对比引导（Self-Contrastive Steering, SCS）通过在推理阶段构造一个\"无条件\"的通用文本表示，用它来\"净化\"条件文本表示，从而让条件文本表示更聚焦于目标条件，而不是与通用文本表示纠缠在一起 [2]",
+      "error": ""
+    },
+    {
+      "question": "LLM 推理服务常用的框架有哪些？",
+      "expected_source": "llm-serve-csSE_LLM-Serving-in-the-Wild-An-Empirical-Study-of-Framew_2608.03036v1.pdf",
+      "got_sources": [
+        "llm-serve-csSE_LLM-Serving-in-the-Wild-An-Empirical-Study-of-Framew_2608.03036v1.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 3551,
+      "answer_preview": "## 结论\n\n根据参考资料，文档中明确提到的 LLM 推理服务框架包括 **vLLM** 和 **LMDeploy**，其中这两个框架被用于比其它框架更广泛的模型家族范围 [5]。文档还指出，LLM 推理服务框架提供了多样化的服务方法和功能",
+      "error": ""
+    },
+    {
+      "question": "不确定性感知的双学生知识蒸馏是怎么做的？",
+      "expected_source": "distill-csCV_Uncertainty-Aware-Dual-Student-Knowledge-Distillatio_2511.18826v1.pdf",
+      "got_sources": [
+        "distill-csCV_Uncertainty-Aware-Dual-Student-Knowledge-Distillatio_2511.18826v1.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 4006,
+      "answer_preview": "# 不确定性感知的双学生知识蒸馏方法\n\n## 结论\n\n该框架的核心思路是：**用教师网络预测的不确定性（基于预测熵）来动态加权教师的软标签指导，同时让两个异构学生网络（ResNet-18 和 MobileNetV2）互相学习**，从而有选择",
+      "error": ""
+    },
+    {
+      "question": "LLMLingua-2 是什么？",
+      "expected_source": "ctx-comp-csCL_Prompt-Compression-in-Diffusion-Large-Language-Model_2605.17932v2.pdf",
+      "got_sources": [
+        "ctx-comp-csCL_Prompt-Compression-in-Diffusion-Large-Language-Model_2605.17932v2.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 3795,
+      "answer_preview": "## 结论\n\nLLMLingua-2 是一种**提示压缩（prompt compression）框架**，其核心特点是把提示压缩重新表述为一个**token 分类（token classification）问题**，并利用更强模型的数据蒸馏",
+      "error": ""
+    },
+    {
+      "question": "cross-encoder 和双塔模型有什么区别？",
+      "expected_source": "rrf-csCL_Evaluating-Biomedical-Reranking-for-LLM-Based-Questi_2610.01324v1.pdf",
+      "got_sources": [
+        "dense-retr-csIR_Towards-Dynamic-Dense-Retrieval-with-Routing-Strateg_2602.22547v1.pdf",
+        "graphrag-csIR_STAR-Semantic-Tuned-and-Tail-Adaptive-Retriever-for_2605.18765v1.pdf",
+        "hybrid-csIR_Semantic-Candidate-Job-Matching-A-Comparative-Evalua_2609.23307v1.pdf"
+      ],
+      "hit": false,
+      "latency_ms": 4808,
+      "answer_preview": "## 结论\n\ncross-encoder（交叉编码器）和双塔模型（bi-encoder / dual-encoder）的核心区别在于**编码方式**和**推理成本**：双塔模型将查询和文档分别独立编码到共享向量空间，而 cross-enco",
+      "error": ""
+    },
+    {
+      "question": "BM25 在重排流程里扮演什么角色？",
+      "expected_source": "rrf-csCL_Evaluating-Biomedical-Reranking-for-LLM-Based-Questi_2610.01324v1.pdf",
+      "got_sources": [
+        "rag-eval-csAI_Towards-Query-Agnostic-RAG-Evaluation-via-Query-Cove_2608.11238v3.pdf",
+        "rrf-csCL_Evaluating-Biomedical-Reranking-for-LLM-Based-Questi_2610.01324v1.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 4597,
+      "answer_preview": "## 结论\n\n在参考资料描述的检索与重排流程中，BM25 扮演的是**第一阶段的候选召回器（first-stage retriever）**，其排名结果会通过加权倒数排名融合（weighted RRF）参与最终候选排序，并且在该融合中权重高",
+      "error": ""
+    },
+    {
+      "question": "什么是 ℓ∞ 范数下的近似最近邻？",
+      "expected_source": "ann-csDS_Approximate-Nearest-Neighbor-in-Ultra-High-Dimension_2609.09427v1.pdf",
+      "got_sources": [
+        "ann-csDS_Approximate-Nearest-Neighbor-in-Ultra-High-Dimension_2609.09427v1.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 4755,
+      "answer_preview": "# ℓ∞ 范数下的近似最近邻\n\n## 结论\n\n**ℓ∞ 范数下的近似最近邻（Approximate Nearest Neighbor under ℓ∞）** 是指在 ℓ∞（无穷范数）度量空间下，寻找与查询点 q 距离足够接近的点的数据结构问",
+      "error": ""
+    },
+    {
+      "question": "FRAMES 这个基准测的是什么？",
+      "expected_source": "long-ctx-csCL_Incentivizing-In-depth-Reasoning-over-Long-Contexts_2601.12465v1.pdf",
+      "got_sources": [
+        "hybrid-csIR_Semantic-Candidate-Job-Matching-A-Comparative-Evalua_2609.23307v1.pdf",
+        "long-ctx-csCL_Incentivizing-In-depth-Reasoning-over-Long-Contexts_2601.12465v1.pdf",
+        "tool-call-csCL_SimpleTool-Parallel-Decoding-for-Real-Time-LLM-Funct_2603.00030v1.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 2988,
+      "answer_preview": "**结论：** FRAMES 是一个综合性的长上下文评测基准，用来测试大语言模型在**事实性（factuality）、检索准确性（retrieval accuracy）和推理能力（reasoning）**三个方面的表现 [2]。\n\n**依据",
+      "error": ""
+    },
+    {
+      "question": "SimpleTool 的 parallel decoding 是什么意思？",
+      "expected_source": "tool-call-csCL_SimpleTool-Parallel-Decoding-for-Real-Time-LLM-Funct_2603.00030v1.pdf",
+      "got_sources": [
+        "tool-call-csCL_SimpleTool-Parallel-Decoding-for-Real-Time-LLM-Funct_2603.00030v1.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 4357,
+      "answer_preview": "## 结论\n\nSimpleTool 的 **parallel decoding（并行解码）** 指的是：模型用 **8 个并行 head（对应 batch size B=8）** 同时解码，这些 head **共享同一段输入前缀（input",
+      "error": ""
+    },
+    {
+      "question": "文档版面分析要识别哪些元素？",
+      "expected_source": "doc-parse-csCV_RT-DocLayout-Real-Time-End-to-End-Document-Layout-An_2606.23344v1.md",
+      "got_sources": [
+        "doc-parse-csCV_RT-DocLayout-Real-Time-End-to-End-Document-Layout-An_2606.23344v1.md"
+      ],
+      "hit": true,
+      "latency_ms": 2843,
+      "answer_preview": "文档中提到的版面元素共有 25 类，具体如下。\n\n**结论**：RT-DocLayout 所用数据集对 25 种不同的版面元素类别进行了精细的人工标注 [2]。\n\n**依据**：这 25 类元素分别是——Paragraph Title（段落",
+      "error": ""
+    },
+    {
+      "question": "对话式检索和传统检索有什么区别？",
+      "expected_source": "conv-csIR_Conversational-Search-From-Fundamentals-to-Frontiers_2506.10635v1.txt",
+      "got_sources": [
+        "conv-csIR_Conversational-Search-From-Fundamentals-to-Frontiers_2506.10635v1.txt"
+      ],
+      "hit": true,
+      "latency_ms": 3377,
+      "answer_preview": "## 结论\n\n对话式检索（Conversational Search）与传统即席检索（ad-hoc search）的核心区别在于：**对话式检索中的用户查询是上下文相关的（context-dependent）**，可能包含省略、共指或歧义，",
+      "error": ""
+    },
+    {
+      "question": "混合检索和 Rerank 有什么区别？",
+      "expected_source": "rrf-csCL_Evaluating-Biomedical-Reranking-for-LLM-Based-Questi_2610.01324v1.pdf",
+      "got_sources": [
+        "hybrid-csIR_Semantic-Candidate-Job-Matching-A-Comparative-Evalua_2609.23307v1.pdf",
+        "rag-eval-csAI_Towards-Query-Agnostic-RAG-Evaluation-via-Query-Cove_2608.11238v3.pdf",
+        "rerank-csIR_Local-to-Global-Sentence-Level-Graph-Reranking-for-S_2608.30525v2.txt",
+        "rrf-csCL_Evaluating-Biomedical-Reranking-for-LLM-Based-Questi_2610.01324v1.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 4989,
+      "answer_preview": "## 结论\n\n**混合检索（Hybrid Retrieval）和 Rerank 是两个不同阶段的环节**：混合检索属于**第一阶段召回**，负责从大规模语料中快速捞出一个候选池；Rerank 属于**第二阶段精排**，负责对候选池做更精细的",
+      "error": ""
+    },
+    {
+      "question": "块大小和检索质量之间是什么关系？",
+      "expected_source": "rag-csIR_The-Effect-of-Text-Chunk-Size-on-Retrieval-Augmented_2607.24767v1.md",
+      "got_sources": [
+        "rag-csIR_The-Effect-of-Text-Chunk-Size-on-Retrieval-Augmented_2607.24767v1.md"
+      ],
+      "hit": true,
+      "latency_ms": 4840,
+      "answer_preview": "## 结论\n\n根据参考资料，块大小（chunk size）与检索质量之间是一种**权衡（tradeoff）关系**，不存在\"越大越好\"或\"越小越好\"的单一答案：\n\n- **较小的块**：提升检索精度（retrieval precision）",
+      "error": ""
+    },
+    {
+      "question": "查询改写和重排分别发生在 RAG 流程的哪个阶段？",
+      "expected_source": "query-rw-csDB_ReSequel-Robust-LLM-assisted-Query-Rewriting-and-Opt_2606.20853v2.pdf",
+      "got_sources": [
+        "conv-csIR_Conversational-Search-From-Fundamentals-to-Frontiers_2506.10635v1.txt",
+        "rag-csIR_The-Effect-of-Text-Chunk-Size-on-Retrieval-Augmented_2607.24767v1.md",
+        "rerank-csIR_Local-to-Global-Sentence-Level-Graph-Reranking-for-S_2608.30525v2.txt"
+      ],
+      "hit": false,
+      "latency_ms": 3919,
+      "answer_preview": "## 结论\n\n在 RAG 流程中，**查询改写（query rewriting）发生在检索之前**，属于检索阶段的前置处理；**重排（reranking）发生在检索之后、生成之前**，是连接检索与生成的中间阶段。\n\n## 依据\n\n**查询改",
+      "error": ""
+    },
+    {
+      "question": "幻觉检测和忠实度指标有什么关系？",
+      "expected_source": "faithful-csAI_Automatic-Layer-Selection-for-Hallucination-Detectio_2605.26366v3.txt",
+      "got_sources": [
+        "faithful-csAI_Automatic-Layer-Selection-for-Hallucination-Detectio_2605.26366v3.txt",
+        "rag-eval-csAI_Towards-Query-Agnostic-RAG-Evaluation-via-Query-Cove_2608.11238v3.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 5389,
+      "answer_preview": "## 结论\n\n根据现有参考资料，**幻觉检测（Hallucination Detection）与忠实度（Faithfulness）是同一事实性问题的两种表述方式**：忠实度指标衡量的是模型输出是否\"有事实依据\"（factual ground",
+      "error": ""
+    },
+    {
+      "question": "长上下文模型能替代 RAG 吗？",
+      "expected_source": "long-ctx-csCL_Incentivizing-In-depth-Reasoning-over-Long-Contexts_2601.12465v1.pdf",
+      "got_sources": [
+        "long-ctx-csCL_Incentivizing-In-depth-Reasoning-over-Long-Contexts_2601.12465v1.pdf",
+        "rag-csIR_The-Effect-of-Text-Chunk-Size-on-Retrieval-Augmented_2607.24767v1.md",
+        "rrf-csCL_Evaluating-Biomedical-Reranking-for-LLM-Based-Questi_2610.01324v1.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 4054,
+      "answer_preview": "**结论：根据现有参考资料，无法得出「长上下文模型能替代 RAG」的结论。** 资料中既没有直接讨论二者的替代关系，也没有给出支持替代的证据；相反，部分内容暗示长上下文模型本身存在局限。\n\n**依据如下：**\n\n1. **长上下文模型存在能",
+      "error": ""
+    },
+    {
+      "question": "提示压缩和上下文工程是什么关系？",
+      "expected_source": "ctx-comp-csCL_Prompt-Compression-in-Diffusion-Large-Language-Model_2605.17932v2.pdf",
+      "got_sources": [
+        "ctx-comp-csCL_Prompt-Compression-in-Diffusion-Large-Language-Model_2605.17932v2.pdf",
+        "embedding-csCL_Focusing-Condition-Inference-Time-Self-Contrastive-S_2609.32684v1.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 4203,
+      "answer_preview": "## 结论\n\n**文档中没有找到关于「上下文工程」（context engineering）这一概念的明确定义或专门讨论**，因此无法直接给出「提示压缩」与「上下文工程」之间关系的权威表述。不过，参考资料中包含了关于「提示压缩」的若干描述，",
+      "error": ""
+    },
+    {
+      "question": "知识蒸馏和模型压缩的共同目标是什么？",
+      "expected_source": "distill-csCV_Uncertainty-Aware-Dual-Student-Knowledge-Distillatio_2511.18826v1.pdf",
+      "got_sources": [
+        "distill-csCV_Uncertainty-Aware-Dual-Student-Knowledge-Distillatio_2511.18826v1.pdf"
+      ],
+      "hit": true,
+      "latency_ms": 3867,
+      "answer_preview": "**结论：** 根据参考资料，知识蒸馏与模型压缩的共同目标是——在降低模型计算与内存需求、使其能够部署到资源受限设备上的同时，尽量保留（迁移）大模型的知识与性能。\n\n**依据：**\n\n1. 知识蒸馏被明确描述为一种**模型压缩技术**，其目",
+      "error": ""
+    },
+    {
+      "question": "语义缓存和向量检索有什么联系？",
+      "expected_source": "sem-cache-csAI_LaCache-Robust-Semantic-Caching-for-LLM-Serving_2608.01718v1.md",
+      "got_sources": [
+        "sem-cache-csAI_LaCache-Robust-Semantic-Caching-for-LLM-Serving_2608.01718v1.md"
+      ],
+      "hit": true,
+      "latency_ms": 4770,
+      "answer_preview": "## 结论\n\n根据现有参考资料，**语义缓存（semantic caching）的核心机制正是基于向量（embedding）相似度匹配来实现的**，因此它与向量检索在底层技术上高度相关。但资料中**没有**对\"向量检索\"这一概念本身展开定义",
+      "error": ""
+    },
+    {
+      "question": "量子纠缠的最新实验进展是什么？",
+      "expected_source": "",
+      "got_sources": [],
+      "hit": true,
+      "latency_ms": 4437,
+      "answer_preview": "**结论：无法回答这个问题。** 当前既没有可用的本地文档，也没有联网搜索能力，因此我拿不到任何关于「量子纠缠最新实验进展」的可靠信息。\n\n**依据如下：**\n\n1. **本地知识库为空。** 检索工具返回：知识库为空或没有命中任何片段，需",
+      "error": ""
+    },
+    {
+      "question": "2026 年世界杯的冠军是哪支球队？",
+      "expected_source": "",
+      "got_sources": [],
+      "hit": true,
+      "latency_ms": 941,
+      "answer_preview": "文档中没有找到相关内容。",
+      "error": ""
+    },
+    {
+      "question": "红烧肉怎么做才好吃？",
+      "expected_source": "",
+      "got_sources": [],
+      "hit": true,
+      "latency_ms": 849,
+      "answer_preview": "文档中没有找到相关内容。",
+      "error": ""
+    },
+    {
+      "question": "苏州有哪些值得去的古典园林？",
+      "expected_source": "",
+      "got_sources": [],
+      "hit": true,
+      "latency_ms": 894,
+      "answer_preview": "文档中没有找到相关内容。",
+      "error": ""
+    }
+  ],
+  "ragas": {}
+}

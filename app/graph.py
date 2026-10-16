@@ -40,7 +40,7 @@ import logging
 import time
 from typing import Any
 
-from . import retriever, tools
+from . import retriever, tools, tracing
 
 # rewrite_query() 定义在 retriever.py 末尾（第 8 步 ③），这里必须显式导入 ——
 # 因为它不是 retriever 的「属性式」用法（那样要写 retriever.rewrite_query），
@@ -126,6 +126,9 @@ async def _route(question: str, use_tools: bool) -> str:
     return "retrieve"          # 兜底：宁可多检索一次，也不要漏答
 
 
+# @observe 让这次问答成为追踪面板上的**一条 trace**（根 span）。
+# 没配 Langfuse 时它是「原样返回原函数」，零开销（见 app/tracing.py）。
+@tracing.observe(name="chat")
 async def run_pipeline(
     question: str,
     session_id: str = "default",
@@ -225,6 +228,7 @@ async def run_pipeline(
     }
 
 
+@tracing.observe(name="chat_stream")
 async def run_stream(question: str, session_id: str = "default"):
     """流式版：先检索，再把生成结果逐段 yield 给 SSE。
 

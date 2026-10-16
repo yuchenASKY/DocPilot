@@ -10,6 +10,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import httpx
+
+from . import tracing
 from . import vectorstore as vs_mod
 from .config import settings
 from .embedding import embedder
@@ -108,13 +111,19 @@ def _rrf_fuse(rankings: list[list[str]], k: int = 60) -> dict[str, float]:
     return fused
 
 
+@tracing.observe(name="retrieve", as_type="retriever")
 async def retrieve(
         query: str,
         top_k: int | None = None,
         *,
         use_hybrid: bool = True,
-        use_rerank: bool = False,
+        use_rerank: bool | None = None,
 ) -> list[Retrieved]:
+    # use_rerank 传 None 时取配置里的开关（USE_RERANK）。
+    # 之所以给个「全局开关」而不是默认 True：开它会多一次 API 调用（更慢也更贵），
+    # 应该是「你想用才开」，而不是悄悄替你花钱。显式传参仍然优先。
+    if use_rerank is None:
+        use_rerank = settings.use_rerank
     k = top_k or settings.top_k
     store = vs_mod.store
     if len(store) == 0:
@@ -157,7 +166,23 @@ async def retrieve(
             )
         )
 
-    # 5) 可选 Rerank（交叉编码器精度更高，但更慢更贵，所以只对粗排结果重排）
+    # 5) 相关性阈值过滤（第 12 步 ⑤）
+    #    必须在 Rerank **之前** —— 免得把 rerank 的钱花在注定要丢的候选上。
+    #    判据用**向量相似度**而不是 RRF 融合分：前者是 0~1 的余弦值、有绝对含义；
+    #    后者只在 0.016~0.033 那条窄带里（见 _rrf_fuse 的注释），当不了绝对门槛。
+    #    ⚠️ 副作用：只被 BM25 召回、没被向量召回的结果 vec_score 是 0.0，会被一并滤掉。
+    #    在本项目语料下无损失（中文问 + 英文料时 BM25 单独 Top-1 就是 0/5）；
+    #    但如果以后加了中文语料、BM25 真的开始有用，要重新评估这一步。
+    if settings.min_score > 0:
+        best = max((r.vec_score for r in results), default=0.0)
+        results = [r for r in results if r.vec_score >= settings.min_score]
+        if not results:
+            # 「一条都没过阈值」是**预期行为**，不是异常：
+            # 说明这个问题在知识库里确实没有依据，交给上层（graph.py）去拒答。
+            print(f"[retrieve] 无候选过阈值 min_score={settings.min_score}"
+                  f"（最高 {best:.4f}）→ 交由上层拒答")
+
+    # 6) 可选 Rerank（交叉编码器精度更高，但更慢更贵，所以只对粗排结果重排）
     if use_rerank:
         results = await _rerank(query, results, k)
 
@@ -221,39 +246,99 @@ async def rewrite_query(question: str, history: list[dict] | None = None) -> str
     return rewritten or question
 
 
+async def _rerank_scores(query: str, texts: list[str]) -> list[float] | None:
+    """调真实 cross-encoder rerank 服务，返回与 texts **等长**的相关性分数。
+
+    为什么每次新建 client、而不是像 embedding.py 那样维护连接池：
+      rerank 一次请求约 600 ms，建 client 那十几毫秒可以忽略；
+      而 httpx 的连接池绑在「创建它的那个事件循环」上，跨循环复用会踩
+      `RuntimeError: Event loop is closed`（本项目踩过，见第 11 步）。一次一建天然避开。
+
+    任何失败（网络、限流、响应格式变动）都返回 None ——
+    由 `_rerank()` 降级到基线打分。**重排这一环不能把整条检索链路带崩。**
+    """
+    if not texts:
+        return []
+
+    url = (
+        settings.effective_rerank_base_url.rstrip("/")
+        + "/api/v1/services/rerank/text-rerank/text-rerank"
+    )
+    payload = {
+        "model": settings.rerank_model,
+        "input": {"query": query, "documents": texts},
+        # return_documents=False：只要分数，不回传原文（省带宽）
+        "parameters": {"return_documents": False, "top_n": len(texts)},
+    }
+    headers = {
+        "Authorization": f"Bearer {settings.effective_rerank_api_key}",
+        "Content-Type": "application/json",
+    }
+
+    try:
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(30.0, connect=10.0)
+        ) as client:
+            resp = await client.post(url, json=payload, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+        results = data["output"]["results"]
+    except Exception as exc:  # noqa: BLE001
+        print(f"[rerank] 调用失败，降级为覆盖率基线：{type(exc).__name__}: {exc}")
+        return None
+
+    # 服务返回的是「按分数降序、带原始下标 index」的列表 ——
+    # 必须按 index 还原成与 texts 对齐的顺序，否则分数会错配到别的片段上。
+    scores = [0.0] * len(texts)
+    for row in results:
+        idx = row.get("index")
+        if isinstance(idx, int) and 0 <= idx < len(texts):
+            scores[idx] = float(row.get("relevance_score", 0.0))
+    return scores
+
+
 async def _rerank(query: str, items: list[Retrieved], top_k: int) -> list[Retrieved]:
-    """Rerank 重排序
+    """Rerank 重排序 —— 用**真实 cross-encoder 模型**（配了就走 API）。
 
     和向量检索的区别（面试必答）：向量检索是双塔，query 和 doc 分别编码再算相似度，
     快但精度有损；Rerank 是交叉编码器，把 query 和 doc 拼在一起过一遍模型，
     token 之间有完整注意力交互，准但慢一到两个数量级。所以只对粗排结果做。
 
-    实现路线（选一条）：
-      A. 调 API（最省事）：Jina Reranker / 智源 BGE-Reranker / Cohere Rerank
-      B. 本地模型：`uv pip install sentence-transformers`，加载 `BAAI/bge-reranker-base`，
-         首次约 1GB，之后可离线用（国内可用 hf-mirror.com 镜像）
-      C. 先用一个不需要模型的基线顶上：用「查询词在片段里的覆盖度」当 rerank_score。
-         效果肯定不如真模型，但链路完整、可量化，还能量出「加 Rerank 前后差多少」——
-         这本身就是评测报告里的一行。
+    两条路线：
+      A. **真实模型（当前实现）**：调阿里百炼的 `gte-rerank-v2`
+         —— 同一个 `EMBED_API_KEY` 就能用，不用另开账号。
+         端点走 DashScope 原生路径（百炼**不支持** OpenAI 兼容的 `/rerank`，实测 404）。
+         换 provider（Jina / Cohere / BGE）只需改 `.env` 的
+         `RERANK_MODEL` + `RERANK_BASE_URL`，代码不用动。
+      B. **降级基线**：没配、或调用失败时，用「查询词在片段里的覆盖度」打分。
+         效果差（中文问 + 英文料时覆盖率大量为 0），但保证链路完整。
 
     规格（做到这三条就算过）：
       1. 给每个 item 填上 `it.rerank_score`（float）；
       2. 按 rerank_score 降序返回；
       3. 返回条数 <= top_k。
-
-    注意：这个函数是 async 的 —— 调 API 用 await，用本地模型时建议丢到线程池
-    （`asyncio.to_thread`），别把事件循环卡住。
     """
-    # 这里用「不需要外部模型」的基线（第 C 条路线）：按查询词在片段里的覆盖度打分。
-    # 好处是链路立刻能跑通、数字可量化；等你要上真模型时，
-    # 把下面三行换成 `it.rerank_score = await rerank_api(query, it.text)` 即可。
-    terms = set(_tokenize(query))
-    for it in items:
-        if not terms:
-            it.rerank_score = it.score
-            continue
-        hit = sum(1 for t in terms if t in it.text)
-        coverage = hit / len(terms)
-        # 覆盖度为主、原始相似度为辅（0.7 : 0.3），别把向量信号完全丢掉
-        it.rerank_score = 0.7 * coverage + 0.3 * it.score
+    if not items:
+        return []
+
+    scores = None
+    if settings.rerank_enabled:
+        scores = await _rerank_scores(query, [it.text for it in items])
+
+    if scores is not None:
+        # 真实 cross-encoder 分数：同一个模型出的，量纲一致，可直接排序
+        for it, s in zip(items, scores):
+            it.rerank_score = s
+    else:
+        # 降级基线：覆盖率为主、原始 RRF 分为辅。
+        # ⚠️ 这两项量纲差一个数量级（实测约 24 倍），实际排序基本由 coverage 决定 ——
+        # 这正是第 8 步 ④ 记录过的「量纲失衡」，留在这里当反例。
+        terms = set(_tokenize(query))
+        for it in items:
+            if not terms:
+                it.rerank_score = it.score
+                continue
+            coverage = sum(1 for t in terms if t in it.text) / len(terms)
+            it.rerank_score = 0.7 * coverage + 0.3 * it.score
+
     return sorted(items, key=lambda x: -x.rerank_score)[:top_k]

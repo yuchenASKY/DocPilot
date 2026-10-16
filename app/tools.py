@@ -17,7 +17,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from . import retriever
+from . import retriever, tracing
 
 # 每个模块用自己名字的 logger（__name__ 就是模块名）——
 # 日志里能看出是哪个文件打的，第 12 步接 Langfuse 也靠它做分组。
@@ -204,6 +204,7 @@ def openai_tool_schemas() -> list[dict]:
     return [t.to_openai_schema() for t in TOOLS.values()]
 
 
+@tracing.observe(name="tool.execute", as_type="tool")
 async def execute(name: str, arguments: str | dict) -> str:
     # 入口打一条：模型让调哪个工具、参数是什么
     logger.info("tool_call name=%s args=%s", name, arguments)
